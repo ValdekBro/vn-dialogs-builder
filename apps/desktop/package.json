@@ -13,9 +13,11 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "pnpm run typecheck:node && pnpm run typecheck:web",
     "test": "vitest run",
-    "dist:win": "electron-vite build && electron-builder --win --x64"
+    "dist:win": "electron-vite build && electron-builder --win --x64",
+    "dist:mac": "electron-vite build && electron-builder --mac --universal"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@tailwindcss/vite": "^4.3.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

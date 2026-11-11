@@ -1,4 +1,4 @@
-import { app } from "electron";
+import { app, shell } from "electron";
 import type { UpdateState } from "../shared/api";
 
 /** Сторінка релізів — для «Що нового» і ручного завантаження. */
@@ -19,6 +19,7 @@ type Options = {
  * Оновлення через GitHub Releases (ARCHITECTURE.md, «Оновлення»).
  * Перевіряє при запуску й кожні 4 години; сам нічого не завантажує —
  * лише після кнопки «Оновити»: завантажити → дозберегти → встановити й перезапустити.
+ * На macOS — лише перевірка: кнопка «Завантажити» відкриває сторінку релізу (див. `downloadOnly`).
  */
 export class Updater {
   #state: UpdateState;
@@ -27,12 +28,17 @@ export class Updater {
   #timer: NodeJS.Timeout | null = null;
   /** Перевірку натиснула людина: тоді й помилку, і «остання версія» показуємо. */
   #manual = false;
+  /**
+   * macOS без Developer ID: перевіряти можна, а встановити — ні (Squirrel.Mac вимагає того самого
+   * підпису розробника). Тоді «Оновити» відкриває сторінку релізу із .dmg.
+   */
+  readonly downloadOnly = process.platform === "darwin";
 
   constructor(options: Options) {
     this.#options = options;
     this.#state = !app.isPackaged
       ? { status: "unsupported", reason: "dev" }
-      : process.platform !== "win32"
+      : process.platform !== "win32" && process.platform !== "darwin"
         ? { status: "unsupported", reason: "platform" }
         : { status: "idle" };
   }
@@ -49,7 +55,9 @@ export class Updater {
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.logger = console;
     autoUpdater.on("checking-for-update", () => this.#set({ status: "checking" }));
-    autoUpdater.on("update-available", (info) => this.#set({ status: "available", version: info.version }));
+    autoUpdater.on("update-available", (info) =>
+      this.#set(this.downloadOnly ? { status: "available", version: info.version, manual: true } : { status: "available", version: info.version }),
+    );
     autoUpdater.on("update-not-available", () => this.#set(this.#manual ? { status: "latest" } : { status: "idle" }));
     autoUpdater.on("download-progress", (p) => {
       const version = "version" in this.#state ? (this.#state.version ?? "") : "";
@@ -82,6 +90,10 @@ export class Updater {
   /** Кнопка «Оновити». */
   async install(): Promise<void> {
     if (!this.#updater || this.#state.status !== "available") return;
+    if (this.downloadOnly) {
+      await shell.openExternal(`${RELEASES_URL}/tag/v${this.#state.version}`);
+      return;
+    }
     this.#manual = true;
     this.#set({ status: "downloading", version: this.#state.version, percent: 0 });
     try {

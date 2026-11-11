@@ -12,7 +12,8 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "dist:win": "pnpm --filter @vn/desktop dist:win",
-    "release": "node scripts/release.mjs"
+    "release": "node scripts/release.mjs",
+    "dist:mac": "pnpm --filter @vn/desktop dist:mac"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

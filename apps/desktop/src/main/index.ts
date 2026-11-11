@@ -6,7 +6,9 @@ import { ProjectRepository } from "./persistence/project-repository";
 import { SettingsStore } from "./persistence/settings";
 import { ProjectStore } from "./project-store/project-store";
 import { Updater } from "./updater";
-import { IPC } from "../shared/api";
+import { IPC, type SessionEvent } from "../shared/api";
+import { Approvals } from "./mcp/approvals";
+import { McpHttpServer } from "./mcp/http";
 
 app.setName("VNami");
 // Інтерфейс лише в темній темі: системні елементи (меню, діалоги, скролбари) теж темні.
@@ -40,6 +42,8 @@ function migrateLegacyDataDir() {
 
 let mainWindow: BrowserWindow | null = null;
 let store: ProjectStore | null = null;
+let approvals: Approvals | null = null;
+let mcp: McpHttpServer | null = null;
 let quitting = false;
 
 function createWindow(): BrowserWindow {
@@ -85,17 +89,41 @@ async function bootstrap() {
   await repo.init();
   store = new ProjectStore({ repo, settings });
   const projectStore = store;
+  const send = (event: SessionEvent) => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(IPC.event, event);
+  };
   const updater = new Updater({
     // Перед встановленням дозберігаємо проєкт; далі вихід уже нічого не чекає.
     beforeInstall: async () => {
       quitting = true;
       await projectStore.dispose();
     },
-    onState: (update) => {
-      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(IPC.event, { type: "update", update });
+    onState: (update) => send({ type: "update", update }),
+  });
+  // MCP (MCP.md): агент працює з відкритим проєктом; видалення — лише після схвалення людиною.
+  approvals = new Approvals({
+    enabled: () => settings.value.confirmAgentDeletes,
+    timeoutSec: () => settings.value.approvalTimeoutSec,
+    onShow: (request) => {
+      send({ type: "approval", request });
+      // Запит має побачити людина, навіть якщо вікно згорнуте.
+      if (request && mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.flashFrame(true);
+      }
     },
   });
-  registerIpc(store, updater, () => mainWindow);
+  mcp = new McpHttpServer({
+    store,
+    approvals,
+    version: app.getVersion(),
+    onActivity: (tool) => send({ type: "agent", activity: { tool, at: Date.now() } }),
+    onStatus: (info) => send({ type: "mcp", mcp: info }),
+  });
+  await mcp.start(settings.value.mcp.port, settings.value.mcp.token);
+  if (mcp.info.error) console.error("MCP server:", mcp.info.error);
+  registerIpc({ store, updater, mcp, approvals }, () => mainWindow);
   await store.openLastProject();
 
   mainWindow = createWindow();
@@ -123,5 +151,7 @@ app.on("before-quit", (event) => {
   if (quitting || !store) return;
   event.preventDefault();
   quitting = true;
+  approvals?.cancelAll();
+  void mcp?.stop();
   store.dispose().finally(() => app.quit());
 });

@@ -32,10 +32,13 @@
 - Авторизація через заголовок `Authorization: Bearer <token>`. Токен генерує застосунок, а показує його в налаштуваннях разом із готовою командою підключення:
 
 ```bash
-claude mcp add --transport http vn-dialogs http://127.0.0.1:47821/mcp --header "Authorization: Bearer <token>"
+claude mcp add --transport http vnami http://127.0.0.1:47821/mcp --header "Authorization: Bearer <token>"
 ```
 
 - MCP доступний лише поки застосунок запущений.
+- Сервер без сесій (stateless): кожен POST на `/mcp` обробляється окремо, відповіді — JSON (`enableJsonResponse`). Тож «підключеність» агента застосунок визначає за останнім викликом (2 хв).
+- Приймаються лише запити з `Host` 127.0.0.1 / localhost (захист від DNS rebinding).
+- Код: `apps/desktop/src/main/mcp/` — `http.ts` (сервер і токен), `tools.ts` (інструменти й інструкції), `approvals.ts` (черга підтверджень).
 
 ## 3. Інструкції сервера
 

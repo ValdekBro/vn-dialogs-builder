@@ -41,12 +41,13 @@ export function UpdateBanner() {
               </button>
             </Tip>
           </div>
+          {update.manual && <p className="mt-2 text-xs text-zinc-400">{t.update.downloadHint}</p>}
           <button
             type="button"
             onClick={installUpdate}
             className="mt-3 w-full rounded-md bg-blue-600 px-3 py-1.5 font-medium text-white hover:bg-blue-700"
           >
-            {t.update.install}
+            {update.manual ? t.update.download : t.update.install}
           </button>
         </>
       )}

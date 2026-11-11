@@ -2,6 +2,8 @@ import { ipcMain, type BrowserWindow } from "electron";
 import { IPC, type ApiMethod, type ApiMethods, type ApiResult } from "../../shared/api";
 import type { ProjectStore } from "../project-store/project-store";
 import { RELEASES_URL, type Updater } from "../updater";
+import type { Approvals } from "../mcp/approvals";
+import type { McpHttpServer } from "../mcp/http";
 import { app } from "electron";
 import { AppError, toApiError } from "../project-store/errors";
 
@@ -11,7 +13,9 @@ type Handlers = { [M in ApiMethod]: (...args: ApiMethods[M][0]) => ApiMethods[M]
  * Міст main ↔ renderer. Один канал `vn:invoke` з назвою методу; помилки повертаються як дані,
  * бо Electron передає через `invoke` лише текст помилки й губить її код.
  */
-export function registerIpc(store: ProjectStore, updater: Updater, getWindow: () => BrowserWindow | null): () => void {
+export type IpcDeps = { store: ProjectStore; updater: Updater; mcp: McpHttpServer; approvals: Approvals };
+
+export function registerIpc({ store, updater, mcp, approvals }: IpcDeps, getWindow: () => BrowserWindow | null): () => void {
   const handlers: Handlers = {
     "projects.list": () => store.listProjects(),
     "projects.create": (name) => store.createProject(name),
@@ -27,6 +31,9 @@ export function registerIpc(store: ProjectStore, updater: Updater, getWindow: ()
     "app.info": () => ({ version: app.getVersion(), update: updater.state, releasesUrl: RELEASES_URL }),
     "update.check": () => updater.check(true),
     "update.install": () => updater.install(),
+    "mcp.info": () => mcp.info,
+    "approval.current": () => approvals.current,
+    "approval.respond": (id, approved) => approvals.respond(id, approved),
   };
 
   ipcMain.handle(IPC.invoke, async (_event, method: unknown, args: unknown): Promise<ApiResult<unknown>> => {

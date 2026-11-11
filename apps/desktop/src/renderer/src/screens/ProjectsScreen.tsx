@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ProjectSummary } from "../../../shared/api";
-import { Copy, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Bot, Copy, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { openAgentDialog } from "../store/agent-store";
 import { checkForUpdates, useUpdate } from "../store/update-store";
 import { call } from "../api";
 import { Tip } from "../components/Tip";
@@ -58,6 +59,10 @@ function AppFooter() {
   const checking = useUpdate((s) => s.checking);
   return (
     <footer className="mt-auto flex items-center justify-center gap-3 pt-10 text-xs text-zinc-500">
+      <button type="button" onClick={() => openAgentDialog()} className="inline-flex items-center gap-1 hover:text-zinc-200">
+        <Bot size={12} /> {t.agent.title}
+      </button>
+      <span>·</span>
       <span>{t.update.version(appVersion)}</span>
       <span>·</span>
       <button

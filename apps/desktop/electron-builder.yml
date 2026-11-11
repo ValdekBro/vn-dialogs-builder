@@ -27,6 +27,22 @@ win:
   # Без Wine на macOS іконку й метадані .exe змінити не можна. CI на Windows вмикає цей крок
   # (`--config.win.signAndEditExecutable=true` у .github/workflows/release.yml).
   signAndEditExecutable: false
+# macOS (ARCHITECTURE.md, «Оновлення»): універсальна збірка (Apple Silicon + Intel).
+# Без платного Developer ID — ad-hoc підпис: застосунок запускається, але автооновлення на Mac
+# неможливе (Squirrel.Mac вимагає того самого підпису розробника), тож застосунок лише пропонує
+# завантажити нову версію. zip потрібен для latest-mac.yml, за яким застосунок бачить нові версії.
+mac:
+  target:
+    - target: dmg
+      arch: [universal]
+    - target: zip
+      arch: [universal]
+  category: public.app-category.developer-tools
+  identity: "-"
+  hardenedRuntime: false
+  artifactName: VNami-${version}-mac.${ext}
+dmg:
+  artifactName: VNami-${version}-mac.${ext}
 nsis:
   oneClick: false
   perMachine: false

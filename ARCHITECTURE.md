@@ -156,11 +156,16 @@ pnpm dist:win
 
 - **Звідки:** GitHub Releases публічного репозиторію `ValdekBro/vn-dialogs-builder` (`publish` в `electron-builder.yml`). У релізі — `VNami-Setup-X.Y.Z.exe`, `.blockmap` і `latest.yml` з номером версії. Безкоштовно.
 - **У застосунку:** `src/main/updater.ts` на `electron-updater`. Перевірка через 5 с після запуску й кожні 4 год; `autoDownload` вимкнено. Стан (`UpdateState` у `shared/api.ts`) приходить у вікно подією `update`; вікно показує плашку (`UpdateBanner`) і кнопку «Перевірити оновлення» на екрані «Проєкти». «Оновити» → завантаження → `store.dispose()` (дозбереження) → `quitAndInstall` (тихе встановлення й перезапуск). Фонова перевірка без інтернету нічого не показує.
-- Працює лише у встановленій Windows-збірці. У `dev` і на інших платформах стан `unsupported`.
+- **Windows** — повний цикл (завантаження й встановлення). **macOS** — лише перевірка (`Updater.downloadOnly`): стан `available` з `manual: true`, кнопка «Завантажити» відкриває сторінку релізу. Причина: Squirrel.Mac встановлює оновлення, лише якщо воно підписане тим самим Developer ID, а в нас ad-hoc підпис (`mac.identity: "-"`, `hardenedRuntime: false` в `electron-builder.yml`). З Developer ID досить прибрати `downloadOnly` і додати підпис і нотаризацію в CI. У `dev` і на Linux стан `unsupported`.
+- Mac-збірка — універсальна (`--universal`): `VNami-X.Y.Z-mac.dmg` для людей і `VNami-X.Y.Z-mac.zip` + `latest-mac.yml`, за якими застосунок бачить нові версії. Локально: `pnpm dist:mac`.
 - **Випуск версії:**
   1. Закомітити зміни.
   2. `pnpm release 0.2.0` — піднімає версію в `package.json` (корінь і `apps/desktop`), комітить, ставить тег `v0.2.0` і пушить.
-  3. GitHub Actions (`.github/workflows/release.yml`, `windows-latest`): перевіряє, що тег збігається з версією, проганяє typecheck і тести, збирає інсталятор (з іконкою й метаданими `.exe` — на Windows є rcedit) і публікує реліз: спершу створює чернетку (`gh release create --draft`), electron-builder завантажує в неї файли (`--publish always`, `GITHUB_TOKEN`), далі чернетка публікується. Так паралельні завантаження не створюють двох релізів з одним тегом.
+  3. GitHub Actions (`.github/workflows/release.yml`):
+     - `prepare` (Linux): тег збігається з версією, typecheck і тести, чернетка релізу (`gh release create --draft`);
+     - `build` — паралельно `windows-latest` (інсталятор з іконкою й метаданими `.exe`, на Windows є rcedit) і `macos-latest` (універсальний `.dmg` + `.zip`); electron-builder дозавантажує файли в чернетку (`--publish always`, `GITHUB_TOKEN`);
+     - `publish`: чернетка стає опублікованим релізом.
+     Чернетка створюється один раз заздалегідь, тож паралельні завантаження не створюють кількох релізів з одним тегом.
   4. Опис змін («Що нового») — дописати в реліз на GitHub. Плашка веде на сторінку релізу.
 - Для публічного репозиторію хвилини GitHub Actions безкоштовні.
 - Підпису коду немає: SmartScreen попереджає при першому встановленні, на оновлення це не впливає.

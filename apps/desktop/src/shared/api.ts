@@ -38,17 +38,48 @@ export type SessionSnapshot = {
 
 /**
  * Стан оновлення застосунку (ARCHITECTURE.md, «Оновлення»).
- * `unsupported` — у цій збірці оновлення не працюють (запуск з коду або не Windows).
+ * `unsupported` — у цій збірці оновлення не працюють (запуск з коду або Linux).
  */
 export type UpdateState =
   | { status: "unsupported"; reason: "dev" | "platform" }
   | { status: "idle" }
   | { status: "checking" }
   | { status: "latest" }
-  | { status: "available"; version: string }
+  /** `manual` — встановити самому застосунок не може (macOS без Developer ID): кнопка відкриває сторінку релізу. */
+  | { status: "available"; version: string; manual?: boolean }
   | { status: "downloading"; version: string; percent: number }
   | { status: "installing"; version: string }
   | { status: "error"; message: string; version?: string };
+
+/**
+ * Запит агента на видалення, що чекає рішення людини (MCP.md, 5.9).
+ * `items` — що саме зникне (людською мовою), `blockIds` — що підсвітити на полотні.
+ */
+export type ApprovalRequest = {
+  id: string;
+  tool: string;
+  title: string;
+  items: string[];
+  reason: string | null;
+  sceneId: string | null;
+  blockIds: string[];
+  /** Коли запит зніметься сам, мс від епохи. */
+  expiresAt: number;
+};
+
+/** Стан MCP-сервера для підказки «Підключити агента» (MCP.md, 2). */
+export type McpInfo = {
+  running: boolean;
+  url: string;
+  port: number;
+  token: string;
+  /** Готова команда для Claude Code. */
+  command: string;
+  error: string | null;
+};
+
+/** Остання дія агента — для індикатора у верхній панелі. */
+export type AgentActivity = { tool: string; at: number };
 
 export type AppInfo = { version: string; update: UpdateState; releasesUrl: string };
 
@@ -67,7 +98,10 @@ export type SessionEvent =
     }
   | { type: "save"; save: SaveState }
   | { type: "projects"; projects: ProjectSummary[] }
-  | { type: "update"; update: UpdateState };
+  | { type: "update"; update: UpdateState }
+  | { type: "approval"; request: ApprovalRequest | null }
+  | { type: "agent"; activity: AgentActivity }
+  | { type: "mcp"; mcp: McpInfo };
 
 /** Помилка, що пройшла через IPC. Коди ядра + власні коди застосунку. */
 export type ApiError = { code: string; message: string; details?: unknown };
@@ -130,6 +164,10 @@ export type ApiMethods = {
   "update.check": [[], void];
   /** Завантажити, встановити й перезапуститися — кнопка «Оновити». */
   "update.install": [[], void];
+  "mcp.info": [[], McpInfo];
+  /** Поточний запит на підтвердження (якщо вікно відкрилось, поки він чекав). */
+  "approval.current": [[], ApprovalRequest | null];
+  "approval.respond": [[id: string, approved: boolean], void];
 };
 
 export type ApiMethod = keyof ApiMethods;

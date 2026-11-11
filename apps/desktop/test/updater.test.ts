@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { UpdateState } from "../src/shared/api";
 
-const electron = vi.hoisted(() => ({ app: { isPackaged: true } }));
+const electron = vi.hoisted(() => ({ app: { isPackaged: true }, shell: { openExternal: vi.fn(async () => {}) } }));
 vi.mock("electron", () => electron);
 
 const fake = vi.hoisted(() => ({ autoUpdater: null as any }));
@@ -49,12 +49,26 @@ describe("Updater", () => {
     return { updater, states, saved };
   }
 
-  it("is unsupported when running from source or not on Windows", async () => {
+  it("is unsupported when running from source or on Linux", async () => {
     electron.app.isPackaged = false;
     expect((await make()).updater.state).toEqual({ status: "unsupported", reason: "dev" });
     electron.app.isPackaged = true;
-    setPlatform("darwin");
+    setPlatform("linux");
     expect((await make()).updater.state).toEqual({ status: "unsupported", reason: "platform" });
+  });
+
+  it("on macOS only checks: «Завантажити» opens the release page instead of installing", async () => {
+    setPlatform("darwin");
+    fake.autoUpdater.nextCheck = "available";
+    const { updater, states } = await make();
+    expect(updater.state).toEqual({ status: "idle" });
+    await updater.start();
+    await updater.check(true);
+    expect(states.at(-1)).toEqual({ status: "available", version: "0.2.0", manual: true });
+    await updater.install();
+    expect(electron.shell.openExternal).toHaveBeenCalledWith("https://github.com/ValdekBro/vn-dialogs-builder/releases/tag/v0.2.0");
+    expect(fake.autoUpdater.downloadUpdate).not.toHaveBeenCalled();
+    expect(fake.autoUpdater.quitAndInstall).not.toHaveBeenCalled();
   });
 
   it("checks after launch and every 4 hours, without downloading anything by itself", async () => {

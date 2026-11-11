@@ -1,5 +1,9 @@
-# Реліз (ARCHITECTURE.md, «Оновлення»): пуш тегу vX.Y.Z → тести → збірка Windows-інсталятора →
-# публікація GitHub Release з VNami-Setup-X.Y.Z.exe і latest.yml. Застосунки бачать його й пропонують оновитись.
+# Реліз (ARCHITECTURE.md, «Оновлення»): пуш тегу vX.Y.Z →
+#   1) prepare: перевірка версії, typecheck і тести, чернетка релізу;
+#   2) windows і mac паралельно збирають інсталятори й дозавантажують їх у чернетку;
+#   3) publish: чернетка стає опублікованим релізом — застосунки бачать нову версію.
+# Чернетку створюємо один раз заздалегідь: інакше паралельні завантаження electron-builder
+# можуть створити кілька релізів з одним тегом.
 name: Release
 
 on:
@@ -10,52 +14,67 @@ permissions:
   contents: write # створити реліз і завантажити файли
 
 jobs:
-  windows:
-    runs-on: windows-latest
+  prepare:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
       - uses: pnpm/action-setup@v4 # версію бере з packageManager у package.json
-
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
-
       - name: Install
         run: pnpm install --frozen-lockfile
-
       - name: Tag matches app version
-        shell: bash
         run: |
           APP_VERSION=$(node -p "require('./apps/desktop/package.json').version")
           if [ "v$APP_VERSION" != "$GITHUB_REF_NAME" ]; then
             echo "::error::Тег $GITHUB_REF_NAME не збігається з версією застосунку v$APP_VERSION (apps/desktop/package.json)"
             exit 1
           fi
-
       - name: Typecheck & tests
         run: |
           pnpm typecheck
           pnpm test
-
-      # Реліз створюємо один раз заздалегідь (чернеткою): інакше паралельні завантаження
-      # electron-builder можуть створити два релізи з одним тегом.
       - name: Create draft release
-        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$GITHUB_REF_NAME" --draft --title "VNami $GITHUB_REF_NAME" --notes "Що нового — допишіть тут."
+        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --title "VNami $GITHUB_REF_NAME" --notes "Що нового — допишіть тут."
 
-      - name: Build & publish
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            # На Windows є rcedit: іконка й метадані .exe (на Mac цей крок для Windows-збірки вимкнено).
+            args: --win --x64 --config.win.signAndEditExecutable=true
+          - os: macos-latest
+            # Універсальна збірка (Apple Silicon + Intel) з ad-hoc підписом, див. electron-builder.yml.
+            args: --mac --universal
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build & upload
         working-directory: apps/desktop
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # На Windows є rcedit: іконка й метадані .exe (на Mac цей крок вимкнено).
-        run: pnpm exec electron-vite build && pnpm exec electron-builder --win --x64 --publish always --config.win.signAndEditExecutable=true
-
-      - name: Publish release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+        run: pnpm exec electron-vite build && pnpm exec electron-builder ${{ matrix.args }} --publish always
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest

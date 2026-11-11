@@ -10,6 +10,7 @@ import { attempt } from "../../store/toast";
 import { t } from "../../strings/uk";
 import { moveBlocks, removeBlocks } from "../actions";
 import { useCanvas } from "../canvas-store";
+import { useAgent } from "../../store/agent-store";
 import { CharacterPicker } from "../CharacterPicker";
 import { useCanvasData } from "../context";
 import type { ProjNode } from "../projection";
@@ -30,6 +31,9 @@ export function BlockNode({ data, selected }: NodeProps) {
   const character = useApp((s) => (block?.characterId ? s.project?.characters[block.characterId] : undefined));
   const editing = useCanvas((s) => s.editing);
   const flash = useCanvas((s) => s.flash === node.blockId);
+  // Агент щойно змінив блок — світиться; агент просить видалити — червона рамка (FLOWS.md, 14).
+  const glowing = useAgent((s) => s.glowing.has(node.blockId));
+  const doomed = useAgent((s) => !!s.approval?.blockIds.includes(node.blockId));
   // Під час перетягування від виходу підсвічуємо блоки, до яких можна під'єднати.
   const dragFrom = useConnection((c) => (c.inProgress ? c.fromNode.id : null));
   if (!block) return null;
@@ -42,7 +46,13 @@ export function BlockNode({ data, selected }: NodeProps) {
   const addingLine = editing?.kind === "newLine" && editing.blockId === block.id;
 
   const border = issues.length > 0 ? "border-red-500/80" : isChoice ? "border-violet-500/60" : "border-zinc-700";
-  const ring = flash ? "ring-2 ring-amber-400" : dropTarget ? "ring-2 ring-sky-400" : selected ? "ring-2 ring-blue-500" : "";
+  const ring = doomed
+    ? "ring-2 ring-red-500 ring-offset-2 ring-offset-zinc-950 animate-pulse"
+    : flash
+      ? "ring-2 ring-amber-400"
+      : glowing
+        ? "ring-2 ring-emerald-400/80 shadow-lg shadow-emerald-500/20"
+        : dropTarget ? "ring-2 ring-sky-400" : selected ? "ring-2 ring-blue-500" : "";
 
   return (
     <div

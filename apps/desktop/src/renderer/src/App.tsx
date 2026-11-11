@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { UpdateBanner } from "./components/UpdateBanner";
+import { ApprovalPanel } from "./components/ApprovalPanel";
+import { AgentDialog } from "./components/AgentDialog";
 import { ProjectScreen } from "./screens/ProjectScreen";
 import { ProjectsScreen } from "./screens/ProjectsScreen";
 import { useApp } from "./store/app-store";
@@ -20,6 +22,8 @@ export function App() {
       {project ? <ProjectScreen /> : <ProjectsScreen />}
       <Toasts />
       <UpdateBanner />
+      <ApprovalPanel />
+      <AgentDialog />
     </>
   );
 }
