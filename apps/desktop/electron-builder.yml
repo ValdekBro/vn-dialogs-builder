@@ -24,7 +24,7 @@ win:
     - target: nsis
       arch: [x64]
   # Без Wine на macOS іконку й метадані .exe змінити не можна. CI на Windows вмикає цей крок
-  # (`-c.win.signAndEditExecutable=true` у .github/workflows/release.yml).
+  # (`--config.win.signAndEditExecutable=true` у .github/workflows/release.yml).
   signAndEditExecutable: false
 nsis:
   oneClick: false

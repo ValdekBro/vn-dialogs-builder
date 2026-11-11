@@ -13,11 +13,11 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4 # версію бере з packageManager у package.json
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
@@ -44,4 +44,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # На Windows є rcedit: іконка й метадані .exe (на Mac цей крок вимкнено).
-        run: pnpm exec electron-vite build && pnpm exec electron-builder --win --x64 --publish always -c.win.signAndEditExecutable=true
+        run: pnpm exec electron-vite build && pnpm exec electron-builder --win --x64 --publish always --config.win.signAndEditExecutable=true
