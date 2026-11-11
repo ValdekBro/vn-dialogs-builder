@@ -1,0 +1,40 @@
+{
+  "name": "@vn/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "VNami — desktop app",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "postinstall": "install-electron",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "pnpm run typecheck:node && pnpm run typecheck:web",
+    "test": "vitest run",
+    "dist:win": "electron-vite build && electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "@vn/core": "workspace:*",
+    "@xyflow/react": "^12.12.1",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.18.0",
+    "electron-updater": "^6.8.11",
+    "electron-vite": "^6.0.0",
+    "elkjs": "^0.12.1",
+    "immer": "^11.2.10",
+    "lucide-react": "^1.72.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwindcss": "^4.3.5",
+    "vite": "^8.3.8",
+    "zod": "^4.6.7",
+    "zustand": "^5.1.0"
+  },
+  "author": "VNami"
+}

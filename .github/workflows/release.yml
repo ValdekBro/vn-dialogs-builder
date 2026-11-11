@@ -1,0 +1,47 @@
+# Реліз (ARCHITECTURE.md, «Оновлення»): пуш тегу vX.Y.Z → тести → збірка Windows-інсталятора →
+# публікація GitHub Release з VNami-Setup-X.Y.Z.exe і latest.yml. Застосунки бачать його й пропонують оновитись.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write # створити реліз і завантажити файли
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # версію бере з packageManager у package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Tag matches app version
+        shell: bash
+        run: |
+          APP_VERSION=$(node -p "require('./apps/desktop/package.json').version")
+          if [ "v$APP_VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Тег $GITHUB_REF_NAME не збігається з версією застосунку v$APP_VERSION (apps/desktop/package.json)"
+            exit 1
+          fi
+
+      - name: Typecheck & tests
+        run: |
+          pnpm typecheck
+          pnpm test
+
+      - name: Build & publish
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # На Windows є rcedit: іконка й метадані .exe (на Mac цей крок вимкнено).
+        run: pnpm exec electron-vite build && pnpm exec electron-builder --win --x64 --publish always -c.win.signAndEditExecutable=true

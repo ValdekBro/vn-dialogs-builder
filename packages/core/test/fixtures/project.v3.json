@@ -1,0 +1,113 @@
+{
+  "format": "vn-dialogs-builder.project",
+  "version": 3,
+  "appVersion": "0.1.0",
+  "id": "prj_Zx7vB4nM2q",
+  "name": "Ранок у селі",
+  "description": "Невелике село Залісся на краю лісу. ГГ живе з татком і щоранку ходить по воду до криниці за старим млином.",
+  "characters": {
+    "chr_author0001": {
+      "id": "chr_author0001",
+      "name": "Автор",
+      "color": "#888888",
+      "description": "",
+      "speechStyle": "Нейтральний оповідач",
+      "builtIn": "author"
+    },
+    "chr_hero000001": {
+      "id": "chr_hero000001",
+      "name": "ГГ",
+      "color": "#3b82f6",
+      "description": "Головна героїня, від її імені грає гравець.",
+      "speechStyle": ""
+    },
+    "chr_k3Jd9sQpLm": {
+      "id": "chr_k3Jd9sQpLm",
+      "name": "Бен",
+      "color": "#16a34a",
+      "description": "Мисливець, сусід ГГ.",
+      "speechStyle": "Привітний, трохи грайливий, часто посміюється: «хехе»."
+    }
+  },
+  "characterOrder": [
+    "chr_author0001",
+    "chr_hero000001",
+    "chr_k3Jd9sQpLm"
+  ],
+  "scenes": {
+    "scn_Qw8rT2yUiO": {
+      "id": "scn_Qw8rT2yUiO",
+      "name": "Ранок",
+      "description": "Дорогою до криниці ГГ зустрічає Бена.",
+      "startBlockId": "blk_a1a1a1a1a1",
+      "blocks": {
+        "blk_a1a1a1a1a1": {
+          "id": "blk_a1a1a1a1a1",
+          "characterId": "chr_author0001",
+          "lines": [
+            {
+              "id": "ln_a1a1a1a1a1",
+              "text": "[Бен — мисливець]",
+              "next": {
+                "type": "block",
+                "blockId": "blk_b2b2b2b2b2"
+              }
+            }
+          ]
+        },
+        "blk_b2b2b2b2b2": {
+          "id": "blk_b2b2b2b2b2",
+          "characterId": "chr_k3Jd9sQpLm",
+          "lines": [
+            {
+              "id": "ln_b2b2b2b2b2",
+              "text": "Привіт, ГГ! З самого ранку вже на ногах, хехе. Відра не надто важкі? Може, допомогти донести?",
+              "next": {
+                "type": "block",
+                "blockId": "blk_c3c3c3c3c3"
+              }
+            }
+          ]
+        },
+        "blk_c3c3c3c3c3": {
+          "id": "blk_c3c3c3c3c3",
+          "characterId": "chr_hero000001",
+          "lines": [
+            {
+              "id": "ln_c3c3c3c3c3",
+              "text": "О, Бене, доброго ранку! Та ні, не надто важкі. Але якщо ти так хочеш допомогти, візьми одне відро.",
+              "next": {
+                "type": "block",
+                "blockId": "blk_d4d4d4d4d4"
+              }
+            },
+            {
+              "id": "ln_e5e5e5e5e5",
+              "text": "Доброго ранку, Бене! Дякую, але я сама впораюся.",
+              "next": {
+                "type": "block",
+                "blockId": "blk_d4d4d4d4d4"
+              }
+            }
+          ]
+        },
+        "blk_d4d4d4d4d4": {
+          "id": "blk_d4d4d4d4d4",
+          "characterId": "chr_author0001",
+          "lines": [
+            {
+              "id": "ln_d4d4d4d4d4",
+              "text": "[До криниці стежка йде повз старий млин]",
+              "next": {
+                "type": "end"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "sceneOrder": [
+    "scn_Qw8rT2yUiO"
+  ]
+}

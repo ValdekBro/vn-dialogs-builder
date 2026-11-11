@@ -1,0 +1,35 @@
+# Пакування застосунку (ARCHITECTURE.md, розділ 1). Збірка: `pnpm dist:win`.
+appId: app.vnami.desktop
+productName: VNami
+copyright: VNami
+directories:
+  output: release
+  buildResources: build
+# Усі залежності вже вбудовані в out/ (electron.vite.config.ts), тож пакуємо лише зібрані файли.
+files:
+  - out/**
+  - package.json
+npmRebuild: false
+nodeGypRebuild: false
+# Оновлення (ARCHITECTURE.md, «Оновлення»): релізи на GitHub, застосунок читає latest.yml звідти.
+publish:
+  provider: github
+  owner: ValdekBro
+  repo: vn-dialogs-builder
+  # Одразу опублікований реліз, а не чернетка: інакше застосунки його не побачать.
+  releaseType: release
+win:
+  # Лише інсталятор: оновлюватися вміє тільки він (переносну версію прибрано).
+  target:
+    - target: nsis
+      arch: [x64]
+  # Без Wine на macOS іконку й метадані .exe змінити не можна. CI на Windows вмикає цей крок
+  # (`-c.win.signAndEditExecutable=true` у .github/workflows/release.yml).
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  shortcutName: VNami
+  artifactName: VNami-Setup-${version}.${ext}

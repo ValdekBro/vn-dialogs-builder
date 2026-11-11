@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-zinc-950 text-zinc-100 antialiased select-none;
+  @apply selection:bg-blue-500/40;
+}
+
+input,
+textarea,
+pre {
+  @apply select-text;
+}
+
+/*
+ * React Flow вимикає наведення на зв'язки, які не можна вибрати (клас `inactive`).
+ * Нам наведення потрібне: на ньому з'являються кнопки «Вставити блок» і «Відключити».
+ */
+.vn-canvas .react-flow__edge.inactive {
+  pointer-events: visibleStroke;
+}
+
+/* Кнопки на зв'язках — над усім, зокрема над зв'язками назад, які малюються поверх блоків. */
+.vn-canvas .react-flow__edgelabel-renderer {
+  z-index: 1001;
+}

@@ -1,0 +1,10 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+
+
+# Залежності, які пакети забули оголосити (pnpm суворий і без цього їх не знаходить).
+packageExtensions:
+  "@peculiar/utils":
+    dependencies:
+      tslib: "^2"
