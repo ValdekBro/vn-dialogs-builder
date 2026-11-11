@@ -159,14 +159,14 @@ pnpm dist:win
 - **Windows** — повний цикл (завантаження й встановлення). **macOS** — лише перевірка (`Updater.downloadOnly`): стан `available` з `manual: true`, кнопка «Завантажити» відкриває сторінку релізу. Причина: Squirrel.Mac встановлює оновлення, лише якщо воно підписане тим самим Developer ID, а в нас ad-hoc підпис (`mac.identity: "-"`, `hardenedRuntime: false` в `electron-builder.yml`). З Developer ID досить прибрати `downloadOnly` і додати підпис і нотаризацію в CI. У `dev` і на Linux стан `unsupported`.
 - Mac-збірка — універсальна (`--universal`): `VNami-X.Y.Z-mac.dmg` для людей і `VNami-X.Y.Z-mac.zip` + `latest-mac.yml`, за якими застосунок бачить нові версії. Локально: `pnpm dist:mac`.
 - **Випуск версії:**
-  1. Закомітити зміни.
-  2. `pnpm release 0.2.0` — піднімає версію в `package.json` (корінь і `apps/desktop`), комітить, ставить тег `v0.2.0` і пушить.
+  1. Додати в `CHANGELOG.md` розділ `## [0.2.0] — <дата>`: що нового, що змінилось, що виправлено — для людей, а не для розробників. Цей текст стане описом релізу на GitHub. Закомітити зміни.
+  2. `pnpm release 0.2.0` (без розділу в CHANGELOG скрипт відмовиться) — піднімає версію в `package.json` (корінь і `apps/desktop`), комітить, ставить тег `v0.2.0` і пушить.
   3. GitHub Actions (`.github/workflows/release.yml`):
      - `prepare` (Linux): тег збігається з версією, typecheck і тести, чернетка релізу (`gh release create --draft`);
      - `build` — паралельно `windows-latest` (інсталятор з іконкою й метаданими `.exe`, на Windows є rcedit) і `macos-latest` (універсальний `.dmg` + `.zip`); electron-builder дозавантажує файли в чернетку (`--publish always`, `GITHUB_TOKEN`);
      - `publish`: чернетка стає опублікованим релізом.
      Чернетка створюється один раз заздалегідь, тож паралельні завантаження не створюють кількох релізів з одним тегом.
-  4. Опис змін («Що нового») — дописати в реліз на GitHub. Плашка веде на сторінку релізу.
+  4. Опис релізу CI бере з `CHANGELOG.md` (`scripts/changelog.mjs`). Плашка «Що нового» в застосунку веде на сторінку релізу.
 - Для публічного репозиторію хвилини GitHub Actions безкоштовні.
 - Підпису коду немає: SmartScreen попереджає при першому встановленні, на оновлення це не впливає.
 

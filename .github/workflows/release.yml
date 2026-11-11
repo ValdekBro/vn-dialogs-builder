@@ -39,7 +39,10 @@ jobs:
       - name: Create draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --title "VNami $GITHUB_REF_NAME" --notes "Що нового — допишіть тут."
+        # Опис релізу — розділ версії з CHANGELOG.md (scripts/changelog.mjs).
+        run: |
+          node scripts/changelog.mjs "$GITHUB_REF_NAME" > release-notes.md
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --title "VNami $GITHUB_REF_NAME" --notes-file release-notes.md
 
   build:
     needs: prepare
