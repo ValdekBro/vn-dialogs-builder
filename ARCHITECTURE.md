@@ -160,7 +160,7 @@ pnpm dist:win
 - **Випуск версії:**
   1. Закомітити зміни.
   2. `pnpm release 0.2.0` — піднімає версію в `package.json` (корінь і `apps/desktop`), комітить, ставить тег `v0.2.0` і пушить.
-  3. GitHub Actions (`.github/workflows/release.yml`, `windows-latest`): перевіряє, що тег збігається з версією, проганяє typecheck і тести, збирає інсталятор (з іконкою й метаданими `.exe` — на Windows є rcedit) і публікує реліз (`--publish always`, `GITHUB_TOKEN`).
+  3. GitHub Actions (`.github/workflows/release.yml`, `windows-latest`): перевіряє, що тег збігається з версією, проганяє typecheck і тести, збирає інсталятор (з іконкою й метаданими `.exe` — на Windows є rcedit) і публікує реліз: спершу створює чернетку (`gh release create --draft`), electron-builder завантажує в неї файли (`--publish always`, `GITHUB_TOKEN`), далі чернетка публікується. Так паралельні завантаження не створюють двох релізів з одним тегом.
   4. Опис змін («Що нового») — дописати в реліз на GitHub. Плашка веде на сторінку релізу.
 - Для публічного репозиторію хвилини GitHub Actions безкоштовні.
 - Підпису коду немає: SmartScreen попереджає при першому встановленні, на оновлення це не впливає.

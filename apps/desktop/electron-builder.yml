@@ -16,8 +16,9 @@ publish:
   provider: github
   owner: ValdekBro
   repo: vn-dialogs-builder
-  # Одразу опублікований реліз, а не чернетка: інакше застосунки його не побачать.
-  releaseType: release
+  # CI заздалегідь створює чернетку релізу, electron-builder дозавантажує в неї файли,
+  # а останній крок workflow публікує її (.github/workflows/release.yml).
+  releaseType: draft
 win:
   # Лише інсталятор: оновлюватися вміє тільки він (переносну версію прибрано).
   target:
