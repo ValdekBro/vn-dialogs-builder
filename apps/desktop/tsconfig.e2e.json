@@ -5,5 +5,5 @@
     "lib": ["ES2023", "DOM"],
     "noEmit": true
   },
-  "include": ["playwright.config.ts", "e2e", "src/shared", "src/preload/api.d.ts"]
+  "include": ["playwright.config.ts", "playwright.showcase.config.ts", "e2e", "showcase", "src/shared", "src/preload/api.d.ts"]
 }

@@ -70,8 +70,8 @@ function createWindow(): BrowserWindow {
   });
   // VN_E2E_HIDDEN: background E2E runs; the window renders fully but is not shown.
   if (!(e2e && process.env.VN_E2E_HIDDEN === "1")) win.on("ready-to-show", () => win.show());
-  // No transitions in tests, so clicks land where the element ends up.
-  if (e2e) win.webContents.on("did-finish-load", () => void win.webContents.insertCSS("*,*::before,*::after{transition:none!important;animation:none!important}"));
+  // No transitions in tests, so clicks land where the element ends up. Showcase recordings keep them.
+  if (e2e && process.env.VN_E2E_ANIMATIONS !== "1") win.webContents.on("did-finish-load", () => void win.webContents.insertCSS("*,*::before,*::after{transition:none!important;animation:none!important}"));
   // External links open in the browser, not in the app window.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url);
@@ -86,6 +86,8 @@ function createWindow(): BrowserWindow {
 }
 
 async function bootstrap() {
+  // In development the Dock shows Electron's icon; the packaged app takes build/icon.icns.
+  if (!app.isPackaged && process.platform === "darwin") app.dock?.setIcon(join(__dirname, "../../build/icon.png"));
   const dataDir = app.getPath("userData");
   const settings = new SettingsStore(join(dataDir, "settings.json"));
   await settings.load();

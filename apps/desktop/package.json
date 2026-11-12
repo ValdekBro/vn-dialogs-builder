@@ -16,7 +16,9 @@
     "dist:win": "electron-vite build && electron-builder --win --x64",
     "dist:mac": "electron-vite build && electron-builder --mac --arm64 --x64",
     "typecheck:e2e": "tsc --noEmit -p tsconfig.e2e.json",
-    "e2e": "electron-vite build && playwright test"
+    "e2e": "electron-vite build && playwright test",
+    "icons": "electron scripts/build-icons.cjs",
+    "showcase": "electron-vite build && playwright test -c playwright.showcase.config.ts"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

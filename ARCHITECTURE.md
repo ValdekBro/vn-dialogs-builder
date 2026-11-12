@@ -17,7 +17,8 @@
 | Styles and components | **Tailwind CSS + shadcn/ui** |
 | Hotkeys | **tinykeys** or `react-hotkeys-hook` |
 | Tests | **Vitest** (logic), **Playwright** (e2e for Electron) |
-| Packaging | **electron-builder** (Windows / macOS / Linux) |
+| Website | `site/` — a static page (HTML/CSS/JS, Ukrainian and English) deployed to GitHub Pages by `.github/workflows/pages.yml`. Download links come from the latest release via the GitHub API; videos are recorded by `pnpm --filter @vn/desktop showcase` |
+| Packaging | **electron-builder** (Windows / macOS / Linux). App icon: `apps/desktop/build/icon.svg` (macOS grid) and `icon-win.svg` (full square); `pnpm --filter @vn/desktop icons` renders them into `icon.icns`, `icon.ico` and `icon.png`, which are committed |
 | Monorepo | **pnpm workspaces** |
 
 ## 2. Rationale for key decisions

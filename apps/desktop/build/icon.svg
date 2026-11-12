@@ -1,0 +1,8 @@
+<!-- VNami app icon (macOS grid: 824px plate on a 1024px canvas). A "V" drawn as a dialogue branch:
+     two options from one line; the highlighted node is the chosen one. Regenerate files: pnpm icons -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#4B3BDB"/>
+  <path d="M338 344 L512 716 L686 344" fill="none" stroke="#FFFFFF" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="338" cy="344" r="80" fill="#FFFFFF"/>
+  <circle cx="686" cy="344" r="80" fill="#FFB020"/>
+</svg>

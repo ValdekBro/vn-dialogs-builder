@@ -32,6 +32,7 @@ An E2E test **launches the built Electron app** via Playwright's `_electron.laun
    - `VN_E2E_APPROVAL_SEC` shortens the deletion approval timeout to test `timeout`;
    - update checks are off;
    - `VN_E2E_HIDDEN=1` keeps the window hidden (it still renders fully).
+   - `VN_E2E_ANIMATIONS=1` keeps transitions on — used by `pnpm --filter @vn/desktop showcase`, which records the README media from the real app (`apps/desktop/showcase`).
    - The Claude app config path (`VN_CLAUDE_CONFIG`) always points into the test's temp folder.
 3. **Stable selectors.**
    - Elements are found by role and label (`getByRole("button", { name: "Додати блок" })`). This way the test also checks UI accessibility.

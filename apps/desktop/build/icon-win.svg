@@ -1,0 +1,7 @@
+<!-- VNami icon for Windows: the same artwork filling the square (Windows icons have no grid margin). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 824 824">
+  <rect x="100" y="100" width="824" height="824" rx="150" fill="#4B3BDB"/>
+  <path d="M338 344 L512 716 L686 344" fill="none" stroke="#FFFFFF" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="338" cy="344" r="80" fill="#FFFFFF"/>
+  <circle cx="686" cy="344" r="80" fill="#FFB020"/>
+</svg>

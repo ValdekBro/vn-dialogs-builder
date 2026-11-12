@@ -7,3 +7,4 @@ coverage/
 release/
 apps/desktop/e2e-results/
 apps/desktop/playwright-report/
+apps/desktop/showcase-results/

@@ -30,6 +30,8 @@ win:
   # Without Wine on macOS the .exe icon and metadata cannot be changed. CI on Windows enables this step
   # (`--config.win.signAndEditExecutable=true` in .github/workflows/release.yml).
   signAndEditExecutable: false
+  # Icons are built from build/icon*.svg with `pnpm icons` and committed.
+  icon: build/icon.ico
 # macOS (ARCHITECTURE.md, "Updates"): separate Apple Silicon and Intel builds. A universal build
 # carries two copies of Electron and is twice the size.
 # No paid Developer ID — ad-hoc signature: the app runs, but auto-update on Mac
@@ -41,6 +43,7 @@ mac:
       arch: [arm64, x64]
     - target: zip
       arch: [arm64, x64]
+  icon: build/icon.icns
   category: public.app-category.developer-tools
   identity: "-"
   hardenedRuntime: false

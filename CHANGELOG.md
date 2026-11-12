@@ -4,6 +4,18 @@ Changes in every version. The GitHub release notes are taken from here automatic
 (the `## [X.Y.Z]` section), so add the new version's section before `pnpm release X.Y.Z`.
 Written for people who use the app: what is new, what changed, what was fixed.
 
+## [1.1.0] — 2026-11-12
+
+### New
+- **A website.** VNami has a home page with short videos of what it can do and download buttons that pick the right file for your computer: https://valdekbro.github.io/vn-dialogs-builder/ (Ukrainian and English).
+
+### Changed
+- **A proper app icon.** VNami now has its own icon instead of the default Electron one: a "V" drawn as a dialogue branch, with the chosen option highlighted. It shows in the Dock, the taskbar and the installer.
+
+### Installing
+- **Windows:** the app updates itself — press "Update" in the banner.
+- **Mac:** press "Download" in the banner, take the `.dmg` for your Mac (`mac-arm64` for M1 and newer, `mac-x64` for Intel) and drag VNami into Applications over the old version. Your projects stay.
+
 ## [1.0.0] — 2026-11-12
 
 The first stable version: dialogues can now leave VNami as JSON files.
