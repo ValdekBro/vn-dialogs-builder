@@ -174,9 +174,11 @@ A separate Characters section, so it does not take space next to the canvas.
 - **List** in the left panel. A click opens the scene; the current scene is highlighted.
 - **`+ scene`** creates a new row with an active name input and opens the scene right away with an "Add the first block" button.
 - **Double-click** on a name renames it.
+- **Hover actions** on a scene row (they replace the error/block badge while hovered): ✎ rename, ⧉ duplicate (the copy goes right after the original and opens), 🗑 delete.
 - **The scene description** is shown under the name at the top of the canvas, and clicking it allows editing. Without a description a grey "Add a description…" placeholder stands there.
-- **Scene order** changes by dragging in the list.
-- **Context menu:** rename, duplicate, delete. Deleting a non-empty scene asks for confirmation.
+- **Scene order** changes by dragging in the list; a blue line shows where the scene will land. One undoable step.
+- **Deleting:** an empty scene with no jumps into it is deleted right away. Otherwise a confirmation says how many blocks disappear and how many jumps from other scenes become unconnected. Either way an "Undo" notification follows.
+- A context menu with the same actions — later.
 - **Start block:** `⚑` in the block's action bar.
 
 ## 12. Issues
@@ -184,7 +186,7 @@ A separate Characters section, so it does not take space next to the canvas.
 - A block or output with an issue has a red frame or a red stub. This marks **every unfinished spot**: a block without a character (e.g. after a character was deleted: the text stays, the character field is empty), empty text, an unconnected output, an unreachable block.
 - **While the project has errors, export is blocked.** The "Export" button is disabled, and its tooltip shows the error count and opens the list. Warnings do not block export.
 - Saving **does not depend** on errors: project state is always saved (section 15).
-- **The `⚠ N` counter** in the top bar opens the current scene's issue list, and a switch shows the whole project's. Clicking an issue moves the canvas to it and highlights the spot.
+- **The `⚠ N` counter** in the top bar shows the project's error count (a green check when there are none). A click opens the list: the current scene's issues, with a switch to the whole project (it opens on the whole project if the current scene is clean). Each row says what is wrong and where (scene, character, the start of the line). Clicking an issue opens its scene in the builder, moves the canvas to the block and highlights it.
 - The issue count is also shown next to each scene in the scene list.
 
 ## 13. Navigation

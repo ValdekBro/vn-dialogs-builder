@@ -1,11 +1,10 @@
 import type { Character, Project } from "@vn/core";
 import { ArrowUpRight, Pause, Play, RotateCcw, SkipForward, TriangleAlert } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { focusBlock } from "../canvas/canvas-store";
+import { revealBlock } from "../canvas/canvas-store";
 import { Tip } from "../components/Tip";
 import { readingDelayMs, type Entry } from "../simulation/engine";
 import { advance, choose, restartSimulation, setSpeed, SPEEDS, startSimulation, togglePlaying, useSim } from "../simulation/sim-store";
-import { selectScene } from "../store/app-store";
 import { t } from "../strings/uk";
 
 /**
@@ -192,7 +191,7 @@ function EntryView({ entry, project, current }: { entry: Entry; project: Project
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                reveal(entry.sceneId, entry.blockId);
+                revealBlock(entry.sceneId, entry.blockId);
               }}
               className="mt-3 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500"
             >
@@ -240,7 +239,7 @@ function RevealButton({ sceneId, blockId }: { sceneId: string; blockId: string }
           aria-label={t.sim.showInBuilder}
           onClick={(e) => {
             e.stopPropagation();
-            reveal(sceneId, blockId);
+            revealBlock(sceneId, blockId);
           }}
           className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:bg-zinc-800 hover:text-zinc-100"
         >
@@ -249,12 +248,6 @@ function RevealButton({ sceneId, blockId }: { sceneId: string; blockId: string }
       </Tip>
     </span>
   );
-}
-
-/** Open the block in the builder and highlight it. The canvas resets its focus on mount, so focus comes after. */
-function reveal(sceneId: string, blockId: string | undefined) {
-  selectScene(sceneId);
-  if (blockId) setTimeout(() => focusBlock(blockId, true), 50);
 }
 
 /** Autoplay: the next entry after a pause that depends on the length of the last one and the speed. */

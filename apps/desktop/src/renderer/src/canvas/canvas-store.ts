@@ -1,5 +1,6 @@
 import type { BlockId, LineId } from "@vn/core";
 import { create } from "zustand";
+import { selectScene } from "../store/app-store";
 import type { Draft } from "./projection";
 
 /** Canvas state that is not part of the model: draft, editing, connect mode, focus. */
@@ -36,6 +37,15 @@ export function cancelDraft() {
 
 export function focusBlock(nodeId: string, flash = false) {
   useCanvas.setState({ focus: { nodeId, flash } });
+}
+
+/**
+ * Open a scene in the builder and show a block there, highlighted (simulation, issues list).
+ * The canvas resets its focus when it mounts, so the focus is set right after.
+ */
+export function revealBlock(sceneId: string, blockId?: string) {
+  selectScene(sceneId);
+  if (blockId) setTimeout(() => focusBlock(blockId, true), 50);
 }
 
 let edgeTimer: ReturnType<typeof setTimeout> | null = null;

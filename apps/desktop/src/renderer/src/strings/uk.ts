@@ -159,6 +159,16 @@ export const t = {
     },
   },
 
+  issues: {
+    title: "Проблеми",
+    tip: (n: number) => `${n} ${plural(n, "помилка", "помилки", "помилок")} у проєкті — показати`,
+    none: "Проблем немає",
+    sceneClean: "У цій сцені проблем немає",
+    scene: "Ця сцена",
+    project: (n: number) => `Увесь проєкт · ${n}`,
+    wholeScene: "Уся сцена",
+  },
+
   scenes: {
     title: "Сцени",
     add: "Додати сцену",
@@ -168,6 +178,22 @@ export const t = {
     descriptionPlaceholder: "Короткий опис сцени (необов'язково)",
     empty: "У проєкті немає сцен.",
     errors: (n: number) => `Помилок у сцені: ${n}`,
+    rename: "Перейменувати",
+    duplicate: "Дублювати",
+    remove: "Видалити сцену",
+    dragHint: "Перетягніть сцену, щоб змінити порядок",
+    deleteConfirm: (name: string, blocks: number, jumpsIn: number) =>
+      [
+        `Видалити сцену «${name}»?`,
+        blocks > 0 ? `${plural(blocks, "Зникне", "Зникнуть", "Зникнуть")} ${blocks} ${plural(blocks, "блок", "блоки", "блоків")} цієї сцени.` : "",
+        jumpsIn > 0
+          ? `${jumpsIn} ${plural(jumpsIn, "перехід", "переходи", "переходів")} з інших сцен ${plural(jumpsIn, "стане непідключеним", "стануть непідключеними", "стануть непідключеними")}.`
+          : "",
+        "Це можна скасувати (Ctrl/Cmd+Z).",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    deleted: (name: string) => `Сцену «${name}» видалено`,
   },
 
   characters: {

@@ -1,12 +1,13 @@
 import { sceneIssues, type Project } from "@vn/core";
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
-import { execute } from "../api";
+import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { call, execute } from "../api";
 import { Tip } from "../components/Tip";
 import { SceneCanvas } from "../canvas/SceneCanvas";
 import { InlineEdit } from "../components/InlineEdit";
 import { selectScene, useApp } from "../store/app-store";
-import { attempt } from "../store/toast";
+import { attempt, showToast } from "../store/toast";
+import { reorderedScenes, sceneDeleteImpact } from "./scene-list";
 import { t } from "../strings/uk";
 
 /**
@@ -29,6 +30,24 @@ export function BuilderView({ project }: { project: Project }) {
 function ScenesPanel({ project }: { project: Project }) {
   const sceneId = useApp((s) => s.sceneId);
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [drop, setDrop] = useState<{ target: string; after: boolean } | null>(null);
+
+  const duplicate = (id: string) =>
+    attempt(async () => {
+      const { sceneId: copy } = await execute<{ sceneId: string }>("duplicateScene", { sceneId: id });
+      selectScene(copy);
+    });
+
+  /** An empty scene goes at once; one with blocks or jumps into it asks first. Either way it can be undone. */
+  const remove = async (id: string) => {
+    const scene = project.scenes[id]!;
+    const { blocks, jumpsIn } = sceneDeleteImpact(project, id);
+    if ((blocks > 0 || jumpsIn > 0) && !window.confirm(t.scenes.deleteConfirm(scene.name, blocks, jumpsIn))) return;
+    const ok = await attempt(() => execute("deleteScene", { sceneId: id }));
+    if (ok === undefined) return;
+    showToast(t.scenes.deleted(scene.name), "info", 6000, { label: t.canvas.undo, run: () => void attempt(() => call("session.undo")) });
+  };
 
   const add = () =>
     attempt(async () => {
@@ -50,12 +69,42 @@ function ScenesPanel({ project }: { project: Project }) {
         </Tip>
       </div>
       {project.sceneOrder.length === 0 && <p className="px-2 text-sm text-zinc-400">{t.scenes.empty}</p>}
-      <ul>
+      <ul onDragLeave={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setDrop(null)}>
         {project.sceneOrder.map((id) => {
           const scene = project.scenes[id]!;
           const active = id === sceneId;
+          const dropLine = drop?.target === id ? (drop.after ? "shadow-[0_2px_0_0_#3b82f6]" : "shadow-[0_-2px_0_0_#3b82f6]") : "";
           return (
-            <li key={id} data-testid={`scene-${id}`}>
+            <li
+              key={id}
+              data-testid={`scene-${id}`}
+              draggable={renaming !== id}
+              onDragStart={(e) => {
+                setDragging(id);
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", id);
+              }}
+              onDragOver={(e) => {
+                if (!dragging) return;
+                e.preventDefault();
+                const r = e.currentTarget.getBoundingClientRect();
+                setDrop({ target: id, after: e.clientY > r.top + r.height / 2 });
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragging && drop) {
+                  const sceneIds = reorderedScenes(project.sceneOrder, dragging, drop.target, drop.after);
+                  if (sceneIds) void attempt(() => execute("reorderScenes", { sceneIds }));
+                }
+                setDragging(null);
+                setDrop(null);
+              }}
+              onDragEnd={() => {
+                setDragging(null);
+                setDrop(null);
+              }}
+              className={`group relative rounded-md ${dropLine} ${dragging === id ? "opacity-40" : ""}`}
+            >
               {renaming === id ? (
                 <InlineEdit
                   value={scene.name}
@@ -70,21 +119,38 @@ function ScenesPanel({ project }: { project: Project }) {
                   onCancel={() => setRenaming(null)}
                 />
               ) : (
-                <button
-                  type="button"
-                  onClick={() => selectScene(id)}
-                  onDoubleClick={() => setRenaming(id)}
-                  aria-current={active}
-                  className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm ${active ? "bg-blue-500/15 font-medium text-blue-300" : "hover:bg-zinc-800"}`}
-                >
-                  <span className="truncate">{scene.name}</span>
-                  <SceneBadge scene={scene} />
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => selectScene(id)}
+                    onDoubleClick={() => setRenaming(id)}
+                    aria-current={active}
+                    className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm ${active ? "bg-blue-500/15 font-medium text-blue-300" : "hover:bg-zinc-800"}`}
+                  >
+                    <span className="truncate">{scene.name}</span>
+                    <span className="group-hover:invisible">
+                      <SceneBadge scene={scene} />
+                    </span>
+                  </button>
+                  {/* Actions appear on hover over the badge. `invisible`, so hidden buttons do not catch clicks. */}
+                  <span className="invisible absolute right-1 top-1/2 flex -translate-y-1/2 gap-0.5 rounded-md bg-zinc-800 group-hover:visible">
+                    <RowAction label={t.scenes.rename} onClick={() => setRenaming(id)}>
+                      <Pencil size={12} />
+                    </RowAction>
+                    <RowAction label={t.scenes.duplicate} onClick={() => duplicate(id)}>
+                      <Copy size={12} />
+                    </RowAction>
+                    <RowAction label={t.scenes.remove} onClick={() => remove(id)} danger>
+                      <Trash2 size={12} />
+                    </RowAction>
+                  </span>
+                </>
               )}
             </li>
           );
         })}
       </ul>
+      {project.sceneOrder.length > 1 && <p className="mt-2 px-2 text-[11px] text-zinc-500">{t.scenes.dragHint}</p>}
     </section>
   );
 }
@@ -121,6 +187,24 @@ function SceneView({ project }: { project: Project }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function RowAction({ label, onClick, danger, children }: { label: string; onClick: () => void; danger?: boolean; children: React.ReactNode }) {
+  return (
+    <Tip label={label}>
+      <button
+        type="button"
+        aria-label={label}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        className={`flex h-6 w-6 items-center justify-center rounded text-zinc-400 ${danger ? "hover:bg-red-600 hover:text-white" : "hover:bg-zinc-700 hover:text-white"}`}
+      >
+        {children}
+      </button>
+    </Tip>
   );
 }
 
