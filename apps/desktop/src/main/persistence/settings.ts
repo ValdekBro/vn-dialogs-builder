@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
+import { AGENT_CLIENTS } from "../../shared/api";
 import { writeFileAtomic } from "./fs-atomic";
 
 /** App settings (`settings.json` in storage). Not to be confused with project files. */
@@ -18,6 +19,8 @@ export const Settings = z.object({
   confirmAgentDeletes: z.boolean().default(true),
   /** How many seconds an MCP call waits for human approval. */
   approvalTimeoutSec: z.number().int().min(5).max(3600).default(120),
+  /** The AI picked in "Connect an AI agent": the dialog then shows only its instructions. */
+  agentClient: z.enum(AGENT_CLIENTS).nullable().default(null),
 });
 
 export type Settings = z.infer<typeof Settings> & { mcp: { token: string } };

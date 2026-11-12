@@ -110,7 +110,7 @@ There is no web version, cloud or accounts. Mobile platforms are out of scope. *
 - The agent can read the character list, each character in detail, the scene list, and the structure and content of a whole scene.
 - The agent can add blocks and fully edit existing ones. Mistakes are reverted with undo.
 - **Content deletion by the agent** (blocks, options, characters, scenes) runs **only after human approval** in the app. The app shows a request with highlighted blocks and "Підтвердити" / "Відхилити" (Approve / Reject) buttons. Approval can be turned off in settings; it is on by default.
-- **How to connect MCP** (the `🤖` button in the top bar): the app shows the server URL, the token and a ready-made connect command for the agent (e.g. `claude mcp add …`) with a "Copy" button, a prompt the user can send to the agent so it connects itself, and whether the server is running right now.
+- **How to connect MCP** (the `🤖` button in the top bar): the dialog first asks which AI the person uses (Claude chat, Claude Code, Cursor, another agent), remembers it, and then shows only the instructions for it, with "Copy" buttons and the server state. "Other ways to connect" asks again. Details in [FLOWS.md](FLOWS.md), section 14.
 - **The Claude app** (not Claude Code) connects with the "Підключити до Claude" (Connect to Claude) button in the same dialog: VNami adds itself to Claude's settings (MCP.md, 2a). Claude in the browser cannot be connected — it cannot see the user's computer.
 
 The full specification is in [MCP.md](MCP.md).

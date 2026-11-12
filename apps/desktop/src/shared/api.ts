@@ -93,6 +93,13 @@ export type ClaudeDesktopStatus = {
   entry: { command: string; args: string[]; env: Record<string, string> };
 };
 
+/**
+ * Which AI the person connects (the "Connect an AI agent" dialog asks once and remembers it app-wide,
+ * in settings.json). `null` — not chosen yet.
+ */
+export const AGENT_CLIENTS = ["claude-desktop", "claude-code", "cursor", "other"] as const;
+export type AgentClient = (typeof AGENT_CLIENTS)[number];
+
 /** The agent's last action — for the top bar indicator. */
 export type AgentActivity = { tool: string; at: number };
 
@@ -181,6 +188,9 @@ export type ApiMethods = {
   "update.install": [[], void];
   "mcp.info": [[], McpInfo];
   "claude.status": [[], ClaudeDesktopStatus];
+  /** The AI chosen in the connect dialog. */
+  "agent.client": [[], AgentClient | null];
+  "agent.setClient": [[client: AgentClient | null], void];
   /** Write VNami into the Claude app config (the "Connect to Claude" button). */
   "claude.install": [[], ClaudeDesktopStatus];
   /** The current approval request (if the window opened while it was waiting). */

@@ -4,6 +4,7 @@ import type { ProjectStore } from "../project-store/project-store";
 import { RELEASES_URL, type Updater } from "../updater";
 import type { Approvals } from "../mcp/approvals";
 import type { McpHttpServer } from "../mcp/http";
+import type { SettingsStore } from "../persistence/settings";
 import { claudeDesktopStatus, installClaudeDesktop, type StdioEntry } from "../mcp/claude-desktop";
 import { app } from "electron";
 import { AppError, toApiError } from "../project-store/errors";
@@ -19,11 +20,12 @@ export type IpcDeps = {
   updater: Updater;
   mcp: McpHttpServer;
   approvals: Approvals;
+  settings: SettingsStore;
   /** The Claude app config and the bridge entry for it (src/main/mcp/claude-desktop.ts). */
   claude: { configPath: string | null; entry: StdioEntry };
 };
 
-export function registerIpc({ store, updater, mcp, approvals, claude }: IpcDeps, getWindow: () => BrowserWindow | null): () => void {
+export function registerIpc({ store, updater, mcp, approvals, settings, claude }: IpcDeps, getWindow: () => BrowserWindow | null): () => void {
   const handlers: Handlers = {
     "projects.list": () => store.listProjects(),
     "projects.create": (name) => store.createProject(name),
@@ -40,6 +42,10 @@ export function registerIpc({ store, updater, mcp, approvals, claude }: IpcDeps,
     "update.check": () => updater.check(true),
     "update.install": () => updater.install(),
     "mcp.info": () => mcp.info,
+    "agent.client": () => settings.value.agentClient,
+    "agent.setClient": async (client) => {
+      await settings.update({ agentClient: client });
+    },
     "claude.status": () => claudeDesktopStatus(claude.configPath, claude.entry),
     "claude.install": async () => {
       if (!claude.configPath) throw new AppError("UNSUPPORTED", "Застосунок Claude для комп'ютера є лише на macOS і Windows");

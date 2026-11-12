@@ -1,5 +1,6 @@
-import type { BlockId, CharacterId, Next, SceneId } from "@vn/core";
+import { copyBlocks, type BlockClipboard, type BlockId, type CharacterId, type Next, type SceneId } from "@vn/core";
 import { call, execute } from "../api";
+import { useApp } from "../store/app-store";
 import { attempt, showToast } from "../store/toast";
 import { t } from "../strings/uk";
 import { cancelDraft, focusBlock } from "./canvas-store";
@@ -56,4 +57,57 @@ export function setOutputNext(from: LineOutput, next: Next) {
 export async function createCharacterNamed(name: string): Promise<CharacterId | undefined> {
   const r = await attempt(() => execute<{ characterId: CharacterId }>("createCharacter", { name }));
   return r?.characterId;
+}
+
+// ── Clipboard (FLOWS.md, 9) ───────────────────────────────
+
+/**
+ * Copied blocks live in the app, not in the system clipboard: they are model data, and pasting into
+ * another scene (or project) must keep their structure. Pasting gives new IDs every time.
+ */
+let clipboard: BlockClipboard | null = null;
+
+export function copyToClipboard(blockIds: BlockId[]): boolean {
+  const project = useApp.getState().project;
+  if (!project || blockIds.length === 0) return false;
+  clipboard = copyBlocks(project, blockIds);
+  return true;
+}
+
+export function hasClipboard(): boolean {
+  return clipboard !== null;
+}
+
+export function copyBlocksAction(blockIds: BlockId[]) {
+  if (copyToClipboard(blockIds)) showToast(t.canvas.copiedBlocks(blockIds.length));
+}
+
+/** Cut = copy + delete, with the usual "Undo". */
+export async function cutBlocks(blockIds: BlockId[]) {
+  if (!copyToClipboard(blockIds)) return;
+  const ok = await attempt(() => execute("deleteBlocks", { blockIds }));
+  if (ok === undefined) return;
+  showToast(t.canvas.cutBlocks(blockIds.length), "info", 6000, {
+    label: t.canvas.undo,
+    run: () => void attempt(() => call("session.undo")),
+  });
+}
+
+/** Paste into a scene as a separate branch; returns the new block IDs so the canvas can select them. */
+export async function pasteClipboard(sceneId: SceneId): Promise<BlockId[] | null> {
+  if (!clipboard) return null;
+  const snapshot = clipboard;
+  const result = await attempt(() => execute<{ blockIds: BlockId[]; rootBlockIds: BlockId[] }>("pasteBlocks", { sceneId, clipboard: snapshot }));
+  if (!result) return null;
+  focusBlock(result.rootBlockIds[0] ?? result.blockIds[0]!, true);
+  return result.blockIds;
+}
+
+/** ⧉ on a block: a copy of it next to the original, in the same scene. */
+export async function duplicateBlock(sceneId: SceneId, blockId: BlockId) {
+  const project = useApp.getState().project;
+  if (!project) return;
+  const snapshot = copyBlocks(project, [blockId]);
+  const result = await attempt(() => execute<{ blockIds: BlockId[] }>("pasteBlocks", { sceneId, clipboard: snapshot }));
+  if (result?.blockIds[0]) focusBlock(result.blockIds[0], true);
 }

@@ -19,7 +19,7 @@ import { LayoutGrid, Maximize, Minus, Plus } from "lucide-react";
 import { Tip } from "../components/Tip";
 import { useApp } from "../store/app-store";
 import { t } from "../strings/uk";
-import { moveBlocks, removeBlocks, resetLayout, setOutputNext } from "./actions";
+import { copyBlocksAction, cutBlocks, hasClipboard, moveBlocks, pasteClipboard, removeBlocks, resetLayout, setOutputNext } from "./actions";
 import { cancelDraft, flashBlock, resetCanvas, startDraft, useCanvas, hoverEdge } from "./canvas-store";
 import { CanvasContext, indexIssues } from "./context";
 import { applyPinned, layoutProjection, type Point, type Positions, type Size } from "./layout";
@@ -206,18 +206,36 @@ function CanvasInner({ scene }: { scene: Scene }) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
 
-  // Delete removes the selected blocks; Esc cancels the draft.
+  // Delete removes the selected blocks; Esc cancels the draft; Ctrl/Cmd+C/X/V copy, cut and paste blocks.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      const mod = e.metaKey || e.ctrlKey;
+      const ids = () => [...selectedRef.current].filter((id) => scene.blocks[id]);
+      // Copy, cut, paste (FLOWS.md, 9): the selected blocks; pasting selects the copy.
+      if (mod && !e.shiftKey && !e.altKey && ["c", "x", "v"].includes(e.key.toLowerCase())) {
+        if (window.getSelection()?.toString()) return; // selected text: let the system copy it
+        const key = e.key.toLowerCase();
+        if (key === "v") {
+          if (!hasClipboard()) return;
+          e.preventDefault();
+          void pasteClipboard(scene.id).then((pasted) => pasted && setSelected(new Set(pasted)));
+          return;
+        }
+        if (ids().length === 0) return;
+        e.preventDefault();
+        if (key === "c") copyBlocksAction(ids());
+        else void cutBlocks(ids());
+        return;
+      }
       if (e.key === "Escape") {
         if (useCanvas.getState().draft) cancelDraft();
       } else if (e.key === "Delete" || e.key === "Backspace") {
-        const ids = [...selectedRef.current].filter((id) => scene.blocks[id]);
-        if (ids.length > 0) {
+        const doomed = ids();
+        if (doomed.length > 0) {
           e.preventDefault();
-          void removeBlocks(ids);
+          void removeBlocks(doomed);
         }
       }
     };

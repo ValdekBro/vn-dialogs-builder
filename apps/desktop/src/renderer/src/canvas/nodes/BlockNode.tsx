@@ -1,14 +1,14 @@
 import type { Block, Line } from "@vn/core";
 import { Handle, Position, useConnection, type NodeProps } from "@xyflow/react";
 import { linkTargets } from "@vn/core";
-import { Flag, GripVertical, Play, Plus, Trash2, TriangleAlert, Undo2, X } from "lucide-react";
+import { Copy, Flag, GripVertical, Play, Plus, Trash2, TriangleAlert, Undo2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { execute } from "../../api";
 import { Tip } from "../../components/Tip";
 import { useApp } from "../../store/app-store";
 import { attempt } from "../../store/toast";
 import { t } from "../../strings/uk";
-import { moveBlocks, removeBlocks } from "../actions";
+import { duplicateBlock, moveBlocks, removeBlocks } from "../actions";
 import { useCanvas } from "../canvas-store";
 import { useAgent } from "../../store/agent-store";
 import { startSimulation } from "../../simulation/sim-store";
@@ -190,6 +190,20 @@ function Toolbar({ block, isStart }: { block: Block; isStart: boolean }) {
           </button>
         </Tip>
       )}
+      <Tip label={t.canvas.tip.duplicate}>
+        <button
+          type="button"
+          aria-label={t.canvas.tip.duplicate}
+          className={btn}
+          onClick={(e) => {
+            e.stopPropagation();
+            const sceneId = useApp.getState().sceneId;
+            if (sceneId) void duplicateBlock(sceneId, block.id);
+          }}
+        >
+          <Copy size={14} />
+        </button>
+      </Tip>
       <Tip label={t.canvas.tip.remove}>
         <button
           type="button"

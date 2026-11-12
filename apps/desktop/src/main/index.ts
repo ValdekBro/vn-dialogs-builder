@@ -132,7 +132,7 @@ async function bootstrap() {
     configPath: process.env.VN_CLAUDE_CONFIG ?? claudeDesktopConfigPath(process.platform, app.getPath("home"), app.getPath("appData")),
     entry: bridgeEntry(process.execPath, bridgeScript, join(dataDir, "settings.json")),
   };
-  registerIpc({ store, updater, mcp, approvals, claude }, () => mainWindow);
+  registerIpc({ store, updater, mcp, approvals, settings, claude }, () => mainWindow);
   await store.openLastProject();
 
   mainWindow = createWindow();

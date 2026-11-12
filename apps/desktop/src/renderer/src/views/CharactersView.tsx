@@ -7,6 +7,7 @@ import { InlineEdit } from "../components/InlineEdit";
 import { openCharacter, selectScene, useApp } from "../store/app-store";
 import { attempt } from "../store/toast";
 import { t } from "../strings/uk";
+import { ColorPicker } from "../components/ColorPicker";
 
 /** The "Characters" section: list on the left, the selected character's page on the right (FLOWS.md, 10). */
 export function CharactersView({ project }: { project: Project }) {
@@ -85,14 +86,7 @@ function CharacterPage({ project, character: c }: { project: Project; character:
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-8 py-8">
       <header className="flex items-center gap-3">
-        <input
-          type="color"
-          value={c.color}
-          aria-label={t.characters.color}
-          title={t.characters.color}
-          onChange={(e) => update({ color: e.target.value })}
-          className="h-10 w-10 shrink-0 cursor-pointer rounded-full border-0 bg-transparent p-0"
-        />
+        <ColorPicker value={c.color} onChange={(color) => update({ color })} />
         <InlineEdit
           value={c.name}
           required

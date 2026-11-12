@@ -149,7 +149,8 @@ The "END" marker is removed by clicking it (tooltip "Remove end"): the output ge
 
 - **Selection:** click a block. Shift/Ctrl+click adds a block to the selection; a mouse box selects several blocks.
 - **Deletion by the human:** `🗑` or Delete. **No confirmation dialog:** a notification "Deleted 3 blocks · Undo" appears. Links that led into the deleted blocks become red `(+)`.
-- **Copying:** Ctrl/Cmd+C/X/V, or duplicating via `⧉`. A pasted copy gets new IDs and appears as a separate branch that can be connected to the right output. Copying works between scenes too.
+- **Copying:** Ctrl/Cmd+C copies the selected blocks, Ctrl/Cmd+X cuts them (with "Undo"), Ctrl/Cmd+V pastes into the open scene. A pasted copy gets new IDs, appears as a separate branch that can be connected to the right output, and is selected right away. Copying works between scenes and projects (a character missing in the target project becomes empty). Links inside the copied set are kept; links to blocks outside it are kept only if that block exists in the target scene. The clipboard lives in the app; text selected in an input is copied by the system as usual.
+- **Duplicating one block:** `⧉` in the block's action bar — the copy appears next to it as a separate branch.
 
 ## 10. Characters
 
@@ -157,7 +158,7 @@ A separate Characters section, so it does not take space next to the canvas.
 
 - **List on the left:** colour dot, name and line count. The `+` button creates a character with an automatic colour and opens their page right away.
 - **The selected character's page on the right:**
-  - colour (palette + custom colour) and name;
+  - colour and name: a round swatch opens the palette (10 colours) and "Custom colour…" (the system picker; one undo step when it closes);
   - description and backstory — a large field;
   - speech style — with a hint that the agent follows it when writing lines;
   - scenes where the character speaks, with line counts. Clicking a scene opens it in the builder;
@@ -199,7 +200,10 @@ A separate Characters section, so it does not take space next to the canvas.
 
 ## 14. Working together with the agent
 
-- **The `🤖` indicator in the top bar:** grey means the agent is not connected; green — connected (made calls in the last 2 minutes); it pulses when the agent just did something; red — the MCP server did not start (e.g. the port is taken). A click opens "Connect an AI agent": server state, a ready-made prompt to send to the agent, a "Connect to Claude" button for the Claude desktop app, a command for Claude Code and a config for other clients with a "Copy" button, the URL and the token (hidden, can be shown). The same window opens from the Projects screen.
+- **The `🤖` indicator in the top bar:** grey means the agent is not connected; green — connected (made calls in the last 2 minutes); it pulses when the agent just did something; red — the MCP server did not start (e.g. the port is taken). A click opens "Connect an AI agent". The same window opens from the Projects screen.
+  - **First it asks which AI the person uses:** Claude (then: Claude chat — the desktop app, or Claude Code), Cursor, or another agent. The choice is remembered for the whole app (`settings.json`), so next time the dialog goes straight to the instructions.
+  - **Then it shows only what that AI needs:** Claude chat — the "Connect to Claude" button; Claude Code — a prompt to send it, so it connects itself; Cursor — the `mcp.json` entry and where to put it; another agent — a prompt and the MCP config. The manual way (command or config, URL, token hidden by default) is folded under "Or manually".
+  - **"Other ways to connect"** at the bottom starts the questions again.
 - **Agent changes** are highlighted on the canvas: new or changed blocks glow for a few seconds. If a change is off screen, a notification "The agent added 5 blocks · Show" appears.
 - The canvas **does not jump by itself** to agent changes, so it does not disturb the human. You can go to them with the "Show" button.
 - **A deletion request from the agent** appears as a panel over the canvas but does not block work:

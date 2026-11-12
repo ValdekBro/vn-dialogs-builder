@@ -7,11 +7,17 @@ Written for people who use the app: what is new, what changed, what was fixed.
 ## [Unreleased]
 
 ### New
+- **Copy, cut and paste blocks.** Ctrl/Cmd+C, X and V work on the selected blocks, including between scenes and projects; the pasted copy is selected so you can move it right away. The ⧉ button on a block duplicates it.
+- **A simpler "Connect an AI agent".** The dialog first asks which AI you use — Claude chat, Claude Code, Cursor or another agent — and then shows only what that one needs. The choice is remembered; "Other ways to connect" asks again.
 - **Managing scenes.** Hovering a scene in the list shows rename, duplicate and delete buttons. Scenes can be reordered by dragging. Deleting a scene with content asks first and says what will be lost; any deletion can be undone.
 - **Issues list.** The ⚠ counter in the top bar shows how many errors the project has; a click lists them for the current scene or the whole project, and a click on an issue takes you straight to the block.
 - **Dialogue simulation.** The new "Simulation" section plays a scene as a chat, the way a player will read it: lines appear one by one with the character's name and colour, choices become buttons, jumps to other scenes keep playing. Autoplay paces itself by line length, with speeds from 0.5× to 3×; a click or Space shows the next line right away. Start from any block with ▶ on the canvas, or from the scene list in the section. If a branch breaks — an unconnected output, a block without a character, empty text — playback stops, says what is wrong and shows the spot in the builder.
 - **Connect the Claude app** (not only Claude Code). The 🤖 "Connect an AI agent" dialog now has a "Connect to Claude" button: it adds VNami to the Claude desktop app's settings without changing anything else there. Restart Claude afterwards, and you can ask it to write dialogue right in the chat. No need to install Node.js.
 - If VNami is closed, Claude gets a clear "open VNami" message instead of a connection error.
+
+### Changed
+- The character colour picker is now a round swatch with a palette and "Custom colour…" instead of the system's square box.
+- Removed the extra notes about the agent under the lore and speech style fields.
 
 ## [0.3.0] — 2026-11-12
 

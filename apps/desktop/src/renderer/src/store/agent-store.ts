@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AgentActivity, ApprovalRequest, McpInfo, SessionEvent } from "../../../shared/api";
+import type { AgentActivity, AgentClient, ApprovalRequest, McpInfo, SessionEvent } from "../../../shared/api";
 import { call } from "../api";
 
 /** How long after the last call the agent counts as "connected" (the server is stateless). */
@@ -14,6 +14,8 @@ type AgentStore = {
   /** Blocks the agent just changed: they glow for a few seconds. */
   glowing: Set<string>;
   dialogOpen: boolean;
+  /** The AI the person connects (remembered app-wide); `null` — the dialog asks first. */
+  client: AgentClient | null;
 };
 
 export const useAgent = create<AgentStore>(() => ({
@@ -22,6 +24,7 @@ export const useAgent = create<AgentStore>(() => ({
   approval: null,
   glowing: new Set(),
   dialogOpen: false,
+  client: null,
 }));
 
 let glowTimer: ReturnType<typeof setTimeout> | null = null;
@@ -61,14 +64,20 @@ export async function startAgentStore() {
   if (started) return;
   started = true;
   window.vn.onEvent(onEvent);
-  const [mcp, approval] = await Promise.all([call("mcp.info"), call("approval.current")]);
-  useAgent.setState({ mcp, approval });
+  const [mcp, approval, client] = await Promise.all([call("mcp.info"), call("approval.current"), call("agent.client")]);
+  useAgent.setState({ mcp, approval, client });
 }
 
 export function respondApproval(approved: boolean) {
   const req = useAgent.getState().approval;
   if (!req) return;
   void call("approval.respond", req.id, approved);
+}
+
+/** Remember the chosen AI for the whole app; `null` starts the questions again ("Other ways to connect"). */
+export function setAgentClient(client: AgentClient | null) {
+  useAgent.setState({ client });
+  void call("agent.setClient", client);
 }
 
 export function openAgentDialog(open = true) {
