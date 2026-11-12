@@ -1,36 +1,36 @@
-# Що нового у VNami
+# VNami changelog
 
-Тут записано зміни кожної версії. Опис релізу на GitHub береться звідси автоматично
-(розділ `## [X.Y.Z]`), тож перед `pnpm release X.Y.Z` додайте сюди розділ нової версії.
-Пишемо для людей, що користуються застосунком: що з'явилось, що змінилось, що виправлено.
+Changes in every version. The GitHub release notes are taken from here automatically
+(the `## [X.Y.Z]` section), so add the new version's section before `pnpm release X.Y.Z`.
+Written for people who use the app: what is new, what changed, what was fixed.
 
-## [Невипущене]
+## [Unreleased]
 
-### Нове
-- **Підключення до застосунку Claude** (не лише Claude Code). У діалозі 🤖 «Підключити AI-агента» з'явилась кнопка «Підключити до Claude»: вона додає VNami в налаштування Claude для комп'ютера, решта ваших налаштувань не змінюється. Після цього перезапустіть Claude — і можна просити його писати діалоги прямо в чаті. Node.js встановлювати не потрібно.
-- Якщо VNami закрита, Claude отримує зрозуміле повідомлення «відкрийте VNami» замість помилки підключення.
+### New
+- **Connect the Claude app** (not only Claude Code). The 🤖 "Connect an AI agent" dialog now has a "Connect to Claude" button: it adds VNami to the Claude desktop app's settings without changing anything else there. Restart Claude afterwards, and you can ask it to write dialogue right in the chat. No need to install Node.js.
+- If VNami is closed, Claude gets a clear "open VNami" message instead of a connection error.
 
 ## [0.3.0] — 2026-11-12
 
-### Нове
-- **AI-агенти пишуть діалоги прямо в застосунку.** VNami має вбудований MCP-сервер: Claude Code, Cursor та інші агенти можуть читати проєкт і додавати чи редагувати сцени, блоки, репліки й персонажів. Зміни агента підсвічуються на полотні й скасовуються звичайним Ctrl/Cmd+Z.
-- **Видалення агентом — лише з вашого дозволу.** Коли агент хоче щось видалити, з'являється панель: що саме зникне, причина від агента, таймер і кнопки «Підтвердити» / «Відхилити». Блоки, які буде видалено, підсвічуються червоним.
-- **Кнопка 🤖 у верхній панелі** показує, чи підключений агент і чи працює він зараз. Клік відкриває «Підключити AI-агента»: готовий промпт, який достатньо надіслати агенту, щоб він підключився сам, а також команда для Claude Code й конфіг для інших клієнтів.
-- **Версія для macOS** — один `.dmg` для Apple Silicon та Intel. Застосунок сам повідомляє про нові версії; на Mac кнопка «Завантажити» відкриває сторінку релізу.
+### New
+- **AI agents write dialogue right in the app.** VNami has a built-in MCP server: Claude Code, Cursor and other agents can read the project and add or edit scenes, blocks, lines and characters. Agent changes are highlighted on the canvas and undone with the usual Ctrl/Cmd+Z.
+- **Agent deletions only with your permission.** When an agent wants to delete something, a panel appears: what exactly will disappear, the agent's reason, a timer and "Approve" / "Reject" buttons. Blocks to be deleted are highlighted red.
+- **The 🤖 button in the top bar** shows whether an agent is connected and whether it is working right now. A click opens "Connect an AI agent": a ready-made prompt you just send to the agent so it connects itself, plus a command for Claude Code and a config for other clients.
+- **macOS version** — one `.dmg` for Apple Silicon and Intel. The app tells you about new versions; on Mac the "Download" button opens the release page.
 
-### Виправлено
-- Збірка більше не створює двох однакових релізів на GitHub.
+### Fixed
+- The build no longer creates two identical releases on GitHub.
 
-### Встановлення на Mac
-Під час першого запуску macOS скаже, що не може перевірити розробника. Відкрийте «Системні параметри → Конфіденційність і безпека» й натисніть «Все одно відкрити» — це потрібно лише один раз.
+### Installing on Mac
+On first launch macOS says it cannot verify the developer. Open "System Settings → Privacy & Security" and click "Open Anyway" — this is needed only once.
 
 ## [0.1.1] — 2026-11-12
 
-Перший публічний реліз.
+The first public release.
 
-### Нове
-- **Полотно діалогів:** блоки реплік, вибори гравця (кілька реплік у блоці), сходження й цикли, переходи на початок іншої сцени, «Кінець історії».
-- Створення блоків прямо на полотні через `(+)`, вставка між блоками, з'єднання перетягуванням, відключення зв'язку.
-- **Ручне розташування:** блок можна перетягнути за заголовок; позиція зберігається, «Авторозкладка» повертає все на місця.
-- Персонажі, сцени, опис проєкту, лічильник і підсвітка проблем, undo/redo, автозбереження.
-- **Оновлення:** застосунок перевіряє нові версії при запуску й оновлюється однією кнопкою «Оновити» (Windows).
+### New
+- **Dialogue canvas:** line blocks, player choices (several lines in a block), convergence and cycles, jumps to the start of another scene, "End of story".
+- Creating blocks right on the canvas via `(+)`, inserting between blocks, connecting by dragging, disconnecting a link.
+- **Manual placement:** a block can be dragged by its header; the position is saved, and "Auto layout" puts everything back.
+- Characters, scenes, project description, issue counter and highlighting, undo/redo, autosave.
+- **Updates:** the app checks for new versions on launch and updates with a single "Update" button (Windows).

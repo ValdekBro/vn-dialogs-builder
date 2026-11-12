@@ -5,18 +5,18 @@ export type ApprovalStatus = "approved" | "rejected" | "timeout";
 export type ApprovalInput = Omit<ApprovalRequest, "id" | "expiresAt">;
 
 type Options = {
-  /** Чи питати людину взагалі («Підтверджувати видалення агентом»). */
+  /** Whether to ask the human at all ("Confirm agent deletions" setting). */
   enabled: () => boolean;
   timeoutSec: () => number;
-  /** Показати запит у вікні (`null` — сховати). */
+  /** Show the request in the window (`null` hides it). */
   onShow: (request: ApprovalRequest | null) => void;
 };
 
 type Pending = { request: ApprovalInput; resolve: (s: ApprovalStatus) => void };
 
 /**
- * Черга підтверджень видалень агентом (MCP.md, 5.9). Показується один запит за раз,
- * решта чекають у черзі. Таймер кожного запиту стартує, коли його показали людині.
+ * Queue of agent deletion approvals (MCP.md, 5.9). One request is shown at a time,
+ * the rest wait in the queue. Each request's timer starts when it is shown to the human.
  */
 export class Approvals {
   #options: Options;
@@ -44,7 +44,7 @@ export class Approvals {
     this.#finish(approved ? "approved" : "rejected");
   }
 
-  /** Скасувати все (вихід із застосунку, закриття проєкту). */
+  /** Cancel everything (app quit, project close). */
   cancelAll() {
     for (const p of this.#queue.splice(0)) p.resolve("rejected");
     if (this.#current) this.#finish("rejected");

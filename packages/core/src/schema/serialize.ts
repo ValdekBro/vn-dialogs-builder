@@ -3,8 +3,8 @@ import { Project as ProjectSchema } from "./project";
 import { migrateProject, ProjectLoadError } from "./migrations/project";
 
 /**
- * Серіалізація зі стабільним порядком ключів (SCHEMA.md, розділ 7):
- * поля — у порядку схеми, записи `Record` — відсортовані за ID.
+ * Serialization with a stable key order (SCHEMA.md, section 7):
+ * fields in schema order, `Record` entries sorted by ID.
  */
 export function serializeProject(project: Project): string {
   return JSON.stringify(normalizeProject(project), null, 2) + "\n";
@@ -72,13 +72,13 @@ function sortRecord<T>(rec: Record<string, T>, map: (v: T) => T): Record<string,
 
 export type LoadedProject = {
   project: Project;
-  /** Версія файлу до міграції. */
+  /** File version before migration. */
   fromVersion: number;
-  /** true, якщо файл мігровано: перед першим записом потрібна резервна копія. */
+  /** true if the file was migrated: a backup is needed before the first write. */
   migrated: boolean;
 };
 
-/** Завантаження: `JSON.parse` → міграції → валідація схемою з інваріантами. */
+/** Loading: `JSON.parse` → migrations → schema validation with invariants. */
 export function parseProjectFile(text: string): LoadedProject {
   let raw: unknown;
   try {
@@ -94,7 +94,7 @@ export function parseProjectFile(text: string): LoadedProject {
   return { project: parsed.data, fromVersion, migrated: fromVersion !== parsed.data.version };
 }
 
-/** Ім'я резервної копії перед міграцією: `<projectId>.v<стара версія>.bak.json`. */
+/** Backup name before migration: `<projectId>.v<old version>.bak.json`. */
 export function backupFileName(projectId: string, fromVersion: number): string {
   return `${projectId}.v${fromVersion}.bak.json`;
 }

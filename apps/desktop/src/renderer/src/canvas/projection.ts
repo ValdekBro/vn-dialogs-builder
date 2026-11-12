@@ -1,40 +1,40 @@
 import type { Block, BlockId, Next, Output, Scene, SceneId } from "@vn/core";
 
 /**
- * Проєкція графа сцени на вузли й зв'язки полотна (FLOWS.md, розділи 1–4, 8).
+ * Projection of the scene graph onto canvas nodes and links (FLOWS.md, sections 1–4, 8).
  *
- * Кожен блок малюється один раз. Зв'язок у блок, до якого вже веде інший зв'язок (сходження),
- * — така сама звичайна лінія. Непідключені виходи отримують «відросток» з `(+)`,
- * а виходи з кінцем сцени — маркер «КІНЕЦЬ». Порядок вузлів — обхід від старту,
- * щоб розкладка тримала гілки в порядку реплік.
+ * Every block is drawn once. A link into a block that another link already leads to (convergence)
+ * is just another ordinary line. Dangling outputs get a stub with `(+)`,
+ * and outputs ending the story get an "END" marker. Node order is the walk from the start,
+ * so the layout keeps branches in line order.
  *
- * Чиста функція без React: її легко тестувати, а полотно лише малює результат.
+ * A pure function without React: easy to test, and the canvas only draws the result.
  */
 
-/** Вихід на полотні завжди точний: блок і репліка. */
+/** An output on the canvas is always exact: a block and a line. */
 export type LineOutput = Required<Output>;
 
-/** Ключ виходу: `blk_…:ln_…`. */
+/** Output key: `blk_…:ln_…`. */
 export function outputKey(o: LineOutput): string {
   return `${o.blockId}:${o.lineId}`;
 }
 
-/** Id точки виходу (handle) на вузлі блоку — id репліки. */
+/** Id of the output point (handle) on a block node — the line id. */
 export function handleId(o: LineOutput): string {
   return o.lineId;
 }
 
 export type Draft = {
-  /** Вихід, до якого підключиться новий блок. Без нього чернетка стоїть окремо (перший блок сцени). */
+  /** The output the new block will connect to. Without it the draft stands alone (first block of the scene). */
   from?: LineOutput;
-  /** Вставка між `from` і його старим продовженням. */
+  /** Insert between `from` and its old continuation. */
   insert?: boolean;
 };
 
 export type ProjNode =
   | { kind: "block"; id: string; blockId: BlockId; isStart: boolean; reachable: boolean }
   | { kind: "stub"; id: string; output: LineOutput; state: "open" | "end" }
-  /** Перехід на початок іншої сцени — плашка-посилання на кінці виходу. */
+  /** A jump to the start of another scene — a link badge at the end of the output. */
   | { kind: "scene"; id: string; output: LineOutput; sceneId: SceneId }
   | { kind: "draft"; id: "draft"; draft: Draft }
   | { kind: "empty"; id: "empty" };
@@ -42,11 +42,11 @@ export type ProjNode =
 export type ProjEdge = {
   id: string;
   source: string;
-  /** Точка виходу на вузлі-джерелі (лише для блоків; у чернетки одна точка). */
+  /** Output point on the source node (blocks only; a draft has one point). */
   sourceHandle: string;
   target: string;
   kind: "link" | "stub" | "end" | "draft";
-  /** Вихід моделі, з якого йде зв'язок (для чернетки — вихід, до якого вона підключиться). */
+  /** The model output the link comes from (for a draft — the output it will connect to). */
   output?: LineOutput;
 };
 
@@ -68,8 +68,8 @@ export function projectScene(scene: Scene, draft: Draft | null = null): Projecti
 
   const draftKey = draft?.from ? outputKey(draft.from) : null;
 
-  // Повертає вузол-ціль і (для нового піддерева) функцію, що його розгорне. Розгортаємо після того,
-  // як записано ребро, щоб ребра йшли в тому ж порядку обходу, що й вузли.
+  // Returns the target node and (for a new subtree) a function that expands it. We expand after
+  // the edge is recorded, so edges come in the same walk order as nodes.
   const targetOf = (
     output: LineOutput,
     next: Next,
@@ -96,7 +96,7 @@ export function projectScene(scene: Scene, draft: Draft | null = null): Projecti
       placed.add(target);
       return { id: target, kind: "link", expand: () => visit(target, reachable) };
     }
-    // Блок уже на полотні (сходження або повернення назад) — просто ще одна лінія до нього.
+    // The block is already on the canvas (convergence or going back) — just one more line to it.
     return { id: target, kind: "link" };
   };
 
@@ -107,7 +107,7 @@ export function projectScene(scene: Scene, draft: Draft | null = null): Projecti
       const key = outputKey(output);
       const sourceHandle = handleId(output);
       if (draft && draftKey === key) {
-        // Чернетка стає між виходом і тим, що було далі (при вставці), або замість відростка.
+        // The draft goes between the output and what came next (on insert), or replaces the stub.
         nodes.push({ kind: "draft", id: DRAFT_ID, draft });
         edges.push({ id: `e:${key}`, source: blockId, sourceHandle, target: DRAFT_ID, kind: "draft", output });
         if (draft.insert && next !== null) {
@@ -128,7 +128,7 @@ export function projectScene(scene: Scene, draft: Draft | null = null): Projecti
     visit(scene.startBlockId, true);
   }
 
-  // Недосяжні блоки: окремі дерева. Коренями беремо ті, у які не веде жоден інший недосяжний блок.
+  // Unreachable blocks: separate trees. Roots are those no other unreachable block leads into.
   const rest = () => blockIds.filter((id) => !placed.has(id)).sort();
   let remaining = rest();
   while (remaining.length > 0) {
@@ -138,7 +138,7 @@ export function projectScene(scene: Scene, draft: Draft | null = null): Projecti
         if (next?.type === "block" && next.blockId !== id) targeted.add(next.blockId);
       }
     }
-    // У циклі кожен блок має вхід, тож тоді беремо просто перший.
+    // In a cycle every block has an input, so then just take the first.
     const root = remaining.find((id) => !targeted.has(id)) ?? remaining[0]!;
     placed.add(root);
     visit(root, false);

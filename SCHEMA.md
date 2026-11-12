@@ -1,92 +1,93 @@
 # VNami — Data Schema
 
-> Два **окремо версіоновані** формати: **файл проєкту** (внутрішнє сховище застосунку; ця ж модель у пам'яті й у MCP) і **файл експорту** (зовнішній контракт для рушіїв та інших інструментів).
-> Контекст: [OVERVIEW.md](OVERVIEW.md), [ARCHITECTURE.md](ARCHITECTURE.md).
+> Two **separately versioned** formats: the **project file** (the app's internal storage; the same model lives in memory and in MCP) and the **export file** (an external contract for engines and other tools).
+> Context: [OVERVIEW.md](OVERVIEW.md), [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## 1. Ключові рішення
+## 1. Key decisions
 
-1. **Зв'язок зберігається на виході, а не окремою колекцією.** Вихід — це репліка: кожна репліка блоку має своє поле `next`. З одного виходу може йти щонайбільше один зв'язок, і структура даних гарантує це сама.
-2. **Вхідні зв'язки не зберігаються, а обчислюються.** Індекс «хто веде в цей блок» будується в пам'яті. Через нього визначаються сходження й недосяжні блоки.
-3. **`next` має три стани:**
-   - `null` — зв'язок не задано. Вихід вважається проблемним і підсвічується червоним;
-   - `{ "type": "block", "blockId": "..." }` — перехід до блоку;
-   - `{ "type": "end" }` — **свідомий кінець сцени**. Вихід не підсвічується як проблема.
+1. **A link is stored on the output, not in a separate collection.** An output is a line: every line of a block has its own `next` field. At most one link can leave an output, and the data structure guarantees that by itself.
+2. **Incoming links are not stored but computed.** The "who leads into this block" index is built in memory. Convergence and unreachable blocks are determined through it.
+3. **`next` has these states:**
+   - `null` — no link set. The output counts as an issue and is highlighted red;
+   - `{ "type": "block", "blockId": "..." }` — go to a block;
+   - `{ "type": "end" }` — a **deliberate end of the story**. The output is not flagged as an issue;
+   - `{ "type": "scene", "sceneId": "..." }` — jump to the start of another scene.
 
-   Без явного «кінця» кожна легальна кінцівка сцени була б червоною. Крім того, сюди легко додати майбутні типи переходів, наприклад `{ "type": "scene", "sceneId" }` для переходу між сценами.
-4. **Окремих типів блоку немає.** Блок — це персонаж і список реплік (мінімум одна). Одна репліка — звичайний крок діалогу; кілька — вибір гравця, і кожна веде далі своїм шляхом. Майбутні блоки-дії стануть окремим видом вузла.
-5. **Колекції зберігаються як об'єкти за ID**, а порядок там, де він важливий, — окремими масивами ID. Так пошук іде за O(1), а git-diff стабільний.
-6. **ID мають префікс за типом:** `prj_`, `chr_`, `scn_`, `blk_`, `ln_` (репліка), а далі 10 символів з алфавіту nanoid. Їх легко читати в логах і MCP, і переплутати сутності складніше.
-7. **Проблеми (issues) не зберігаються у файлі.** Вони завжди перераховуються з моделі. Файл проєкту може містити проблеми (незавершену роботу), а експорт — ні.
-8. **Стан редактора не зберігається у файлі проєкту.** Згорнуті гілки, зум і вибрана сцена — це налаштування застосунку для конкретного проєкту, тож вони не засмічують diff.
-9. **Сховище й експорт версіонуються незалежно.** Внутрішній формат може змінюватися разом із застосунком (з автоматичною міграцією), а формат експорту — це стабільний контракт для зовнішніх споживачів. Тому між ними є окреме перетворення (розділ 8).
+   Without an explicit "end", every legitimate ending of a scene would be red.
+4. **There are no block types.** A block is a character and a list of lines (at least one). One line is an ordinary dialogue step; several are a player choice, and each continues along its own path. Future action blocks will be a separate kind of node.
+5. **Collections are stored as objects keyed by ID**, and order, where it matters, as separate ID arrays. Lookups are O(1) and git diffs are stable.
+6. **IDs have a type prefix:** `prj_`, `chr_`, `scn_`, `blk_`, `ln_` (line), followed by 10 characters from the nanoid alphabet. They are easy to read in logs and MCP, and harder to mix up.
+7. **Issues are not stored in the file.** They are always recomputed from the model. A project file may contain issues (unfinished work); an export may not.
+8. **Editor state is not stored in the project file.** Zoom and the selected scene are app settings for a given project, so they do not clutter the diff. The exception is manual block positions (`Block.pos`), because the author deliberately arranged them.
+9. **Storage and export are versioned independently.** The internal format may change together with the app (with automatic migration), while the export format is a stable contract for external consumers. So there is a separate conversion between them (section 8).
 
-## 2. Сутності
+## 2. Entities
 
-### Project (корінь файлу проєкту)
+### Project (root of the project file)
 
-Проєкт — це набір сцен із назвою та описом лору. Персонажі належать проєкту й спільні для всіх його сцен.
+A project is a set of scenes with a name and a lore description. Characters belong to the project and are shared by all its scenes.
 
-| Поле | Тип | Опис |
+| Field | Type | Description |
 |---|---|---|
-| `format` | `"vn-dialogs-builder.project"` | Сигнатура формату сховища |
-| `version` | `1` | Версія формату сховища (розділ 7) |
-| `appVersion` | `string` | Версія застосунку, що останньою зберегла файл (довідково) |
+| `format` | `"vn-dialogs-builder.project"` | Storage format signature |
+| `version` | `4` | Storage format version (section 7) |
+| `appVersion` | `string` | Version of the app that last saved the file (informational) |
 | `id` | `ProjectId` | `prj_…` |
-| `name` | `string` | Назва проєкту |
-| `description` | `string` | Довгий опис лору, може бути порожнім |
-| `characters` | `Record<CharacterId, Character>` | Персонажі |
-| `characterOrder` | `CharacterId[]` | Порядок персонажів у списку |
-| `scenes` | `Record<SceneId, Scene>` | Сцени |
-| `sceneOrder` | `SceneId[]` | Порядок сцен у списку |
+| `name` | `string` | Project name |
+| `description` | `string` | Long lore description, may be empty |
+| `characters` | `Record<CharacterId, Character>` | Characters |
+| `characterOrder` | `CharacterId[]` | Character order in the list |
+| `scenes` | `Record<SceneId, Scene>` | Scenes |
+| `sceneOrder` | `SceneId[]` | Scene order in the list |
 
 ### Character
 
-| Поле | Тип | Опис |
+| Field | Type | Description |
 |---|---|---|
 | `id` | `CharacterId` | `chr_…` |
-| `name` | `string` | Ім'я, непорожнє |
+| `name` | `string` | Name, non-empty |
 | `color` | `string` | `#RRGGBB` |
-| `description` | `string` | Опис або історія, може бути порожнім |
-| `speechStyle` | `string` | Стиль мовлення, може бути порожнім |
-| `builtIn` | `"author"`? | Є лише в «Автора». Такого персонажа не можна видалити |
+| `description` | `string` | Description or backstory, may be empty |
+| `speechStyle` | `string` | Speech style, may be empty |
+| `builtIn` | `"author"`? | Present only on "Автор" (Author). This character cannot be deleted |
 
 ### Scene
 
-| Поле | Тип | Опис |
+| Field | Type | Description |
 |---|---|---|
 | `id` | `SceneId` | `scn_…` |
-| `name` | `string` | Назва сцени |
-| `description` | `string` | Короткий опис сцени, необов'язковий (може бути порожнім) |
-| `startBlockId` | `BlockId \| null` | Стартовий блок |
-| `blocks` | `Record<BlockId, Block>` | Блоки сцени |
+| `name` | `string` | Scene name |
+| `description` | `string` | Short scene description, optional (may be empty) |
+| `startBlockId` | `BlockId \| null` | Start block |
+| `blocks` | `Record<BlockId, Block>` | The scene's blocks |
 
 ### Block
 
-| Поле | Тип | Опис |
+| Field | Type | Description |
 |---|---|---|
 | `id` | `BlockId` | `blk_…` |
-| `characterId` | `CharacterId \| null` | `null`, якщо персонажа видалено |
-| `lines` | `Line[]` | Репліки, мінімум одна. Кілька реплік — вибір; порядок масиву збігається з порядком показу |
-| `pos` | `{ x, y }?` | Позиція на полотні, якщо людина переставила блок вручну (цілі числа, координати полотна). Без поля блок розкладається автоматично. На логіку діалогу не впливає й **не експортується** |
+| `characterId` | `CharacterId \| null` | `null` if the character was deleted |
+| `lines` | `Line[]` | Lines, at least one. Several lines are a choice; array order is display order |
+| `pos` | `{ x, y }?` | Canvas position if the human moved the block manually (canvas coordinates). Without it the block is laid out automatically. Does not affect dialogue logic and is **not exported** |
 
-### Line (репліка)
+### Line
 
-| Поле | Тип | Опис |
+| Field | Type | Description |
 |---|---|---|
 | `id` | `LineId` | `ln_…` |
-| `text` | `string` | Текст репліки, може бути багаторядковим |
-| `next` | `Next` | Вихід репліки |
+| `text` | `string` | Line text, may be multiline |
+| `next` | `Next` | The line's output |
 
 ### Next
 
 ```
-null                                   // зв'язок не задано → проблема
-{ "type": "block", "blockId": "blk_…" } // перехід до блоку тієї ж сцени
-{ "type": "end" }                      // свідомий кінець (історії)
-{ "type": "scene", "sceneId": "scn_…" } // перехід на початок іншої сцени
+null                                   // no link → an issue
+{ "type": "block", "blockId": "blk_…" } // go to a block of the same scene
+{ "type": "end" }                      // deliberate end (of the story)
+{ "type": "scene", "sceneId": "scn_…" } // jump to the start of another scene
 ```
 
-## 3. Zod (ескіз для `packages/core/schema`)
+## 3. Zod (`packages/core/src/schema`)
 
 ```ts
 const id = (prefix: string) => z.string().regex(new RegExp(`^${prefix}_[A-Za-z0-9_-]{10}$`));
@@ -124,7 +125,7 @@ export const Block = z.object({
   id: BlockId,
   characterId: CharacterId.nullable(),
   lines: z.array(Line).min(1),
-  pos: z.object({ x: z.number().finite(), y: z.number().finite() }).optional(), // ручна позиція на полотні
+  pos: z.object({ x: z.number().finite(), y: z.number().finite() }).optional(), // manual canvas position
 });
 
 export const Scene = z.object({
@@ -137,7 +138,7 @@ export const Scene = z.object({
 
 export const Project = z.object({
   format: z.literal("vn-dialogs-builder.project"),
-  version: z.literal(3),
+  version: z.literal(4),
   appVersion: z.string(),
   id: ProjectId,
   name: z.string().min(1),
@@ -147,45 +148,48 @@ export const Project = z.object({
   scenes: z.record(SceneId, Scene),
   sceneOrder: z.array(SceneId),
 });
-// + superRefine для інваріантів із розділу 4
+// + superRefine for the invariants in section 4
 ```
 
-## 4. Інваріанти
+## 4. Invariants
 
-Їх перевіряють `superRefine` під час завантаження та імпорту, а також команди під час кожної зміни. Порушення інваріанту означає **пошкоджений файл**, а не проблему для підсвічування.
+They are checked by `superRefine` on load and import, and by commands on every change. A violated invariant means a **corrupted file**, not an issue to highlight.
 
-1. Ключ у `Record` збігається з полем `id` сутності.
-2. `characterOrder` містить рівно ті ID, що є в `characters`, без дублікатів. Те саме стосується `sceneOrder` і `scenes`.
-3. У проєкті рівно один персонаж із `builtIn: "author"`.
-4. Усі ID унікальні в межах проєкту (зокрема ID реплік).
-4a. Блок має щонайменше одну репліку.
-5. `Next.blockId` вказує на блок **тієї ж сцени**.
-5a. `Next.sceneId` вказує на **іншу** наявну сцену (перехід на її стартовий блок).
-6. `startBlockId`, якщо заданий, вказує на блок цієї сцени.
-7. `characterId`, якщо заданий, вказує на наявного персонажа.
+1. The key in a `Record` matches the entity's `id` field.
+2. `characterOrder` contains exactly the IDs in `characters`, without duplicates. The same applies to `sceneOrder` and `scenes`.
+3. The project has exactly one character with `builtIn: "author"`.
+4. All IDs are unique within the project (including line IDs).
+4a. A block has at least one line.
+5. `Next.blockId` points to a block of **the same scene**.
+5a. `Next.sceneId` points to **another** existing scene (a jump to its start block).
+6. `startBlockId`, if set, points to a block of this scene.
+7. `characterId`, if set, points to an existing character.
 
-Команди підтримують інваріанти 5–7 автоматично:
-- коли видаляють блок, усі `next`, що вели в нього, стають `null`, а `startBlockId` за потреби теж стає `null`;
-- коли видаляють персонажа, `characterId` його блоків стає `null`.
+Commands maintain invariants 5–7 automatically:
+- when a block is deleted, every `next` that led into it becomes `null`, and `startBlockId` becomes `null` if needed;
+- when a scene is deleted, jumps into it from other scenes become `null`;
+- when a character is deleted, their blocks' `characterId` becomes `null`.
 
-## 5. Проблеми (обчислюються, підсвічуються червоним)
+## 5. Issues (computed, highlighted red)
 
-| Код | Де | Умова |
+| Code | Where | Condition |
 |---|---|---|
-| `missing_start` | Сцена | Сцена має блоки, але `startBlockId = null` |
-| `unreachable` | Блок | Блок недосяжний від стартового (обхід графа) |
-| `dangling_output` | Репліка | `next = null` |
-| `missing_character` | Блок | `characterId = null` |
-| `empty_text` | Репліка | Текст порожній |
-| `empty_target_scene` | Репліка | Перехід веде в сцену без стартового блоку (порожню) |
+| `missing_start` | Scene | The scene has blocks but `startBlockId = null` |
+| `unreachable` | Block | The block is unreachable from the start block (graph walk) |
+| `dangling_output` | Line | `next = null` |
+| `missing_character` | Block | `characterId = null` |
+| `empty_text` | Line | The text is empty |
+| `empty_target_scene` | Line | The jump leads into a scene without a start block (an empty one) |
 
-Усі проблеми зараз — помилки (`severity: "error"`). Рівень `warning` лишається у форматі для майбутніх перевірок.
+All issues are currently errors (`severity: "error"`). The `warning` level stays in the format for future checks.
 
-**Проблеми з `severity: "error"` блокують експорт** проєкту. Попередження (`warning`) експорт не блокують. Збереження файлу проєкту від проблем не залежить.
+**Issues with `severity: "error"` block project export.** Warnings do not block export. Saving the project file does not depend on issues.
 
-Кожна проблема має вигляд `{ code, sceneId, blockId?, lineId?, severity: "error" | "warning", message }`. Той самий формат повертає MCP-інструмент `list_issues`.
+Each issue looks like `{ code, sceneId, blockId?, lineId?, severity: "error" | "warning", message }`, where `message` is a human-readable description in the UI language. The MCP tool `list_issues` returns the same format.
 
-## 6. Приклад файлу
+## 6. Example file
+
+Content (names, lore, dialogue) is in Ukrainian, as in real projects.
 
 ```json
 {
@@ -303,39 +307,40 @@ export const Project = z.object({
 }
 ```
 
-Блок `blk_c3c3c3c3c3` має дві репліки ГГ — це вибір гравця: прийняти допомогу Бена чи відмовитись. Обидва варіанти ведуть у `blk_d4d4d4d4d4`, тобто тут є **сходження**. На полотні цей блок малюється один раз, а обидва зв'язки до нього — звичайні лінії.
+Block `blk_c3c3c3c3c3` has two lines by ГГ — a player choice: accept Бен's help or decline. Both options lead into `blk_d4d4d4d4d4`, so there is **convergence** here. On the canvas this block is drawn once, and both links into it are ordinary lines.
 
-## 7. Серіалізація та версіонування сховища
+## 7. Storage serialization and versioning
 
-- Ключі записуються в **стабільному порядку**: поля сутності у фіксованому порядку зі схеми, `Record` відсортовані за ID.
-- Відступ — 2 пробіли, у кінці файлу — перенос рядка.
-- **Завантаження:** `JSON.parse` → міграції за `version` → валідація `Project.parse`.
-- **Міграції:** ланцюжок чистих функцій `v1 → v2 → … → поточна` у `core/schema/migrations/project`. Кожна міграція покрита тестом на фікстурі файлу старої версії.
-- **Відкриття старішого файлу:** перед першим збереженням у новому форматі застосунок кладе поруч резервну копію `<projectId>.v<стара версія>.bak.json`.
-- **Відкриття новішого файлу** (з новішої версії застосунку): застосунок не відкриває проєкт і показує повідомлення «Проєкт створено новішою версією, оновіть застосунок». Так старий застосунок не пошкодить дані.
-- `version` піднімається при **будь-якій** зміні структури, навіть додаванні поля, щоб міграції були явними.
+- Keys are written in a **stable order**: entity fields in the fixed schema order, `Record`s sorted by ID.
+- 2-space indentation, a trailing newline at the end of the file.
+- **Loading:** `JSON.parse` → migrations by `version` → `Project.parse` validation.
+- **Migrations:** a chain of pure functions `v1 → v2 → … → current` in `core/schema/migrations/project`. Every migration is covered by a test on an old-version fixture file.
+- **Opening an older file:** before the first save in the new format, the app puts a backup `<projectId>.v<old version>.bak.json` next to it.
+- **Opening a newer file** (from a newer app version): the app does not open the project and shows "The project was created by a newer version, update the app". This way an old app cannot damage the data.
+- `version` is bumped on **any** structural change, even adding a field, so migrations are explicit.
 
-### Журнал змін формату сховища
+### Storage format changelog
 
-| Версія | Зміни | Міграція |
+| Version | Changes | Migration |
 |---|---|---|
-| 1 | Початкова версія: блоки `line` (текст + `next`) і `choice` (текст + варіанти `opt_…`) | — |
-| 2 | Блок = персонаж + `lines[]`, у кожної репліки свій `next`; типів блоку немає | `line` → одна репліка; варіанти `choice` → репліки; текст `choice`-блоку стає окремим блоком того ж персонажа перед вибором |
-| 3 | Новий вид `next`: `{ type: "scene", sceneId }` — перехід на початок іншої сцени | Даних не змінює, лише номер версії |
-| 4 | Необов'язкове поле блоку `pos: { x, y }` — ручна позиція на полотні | Даних не змінює, лише номер версії |
+| 1 | Initial version: `line` blocks (text + `next`) and `choice` blocks (text + `opt_…` options) | — |
+| 2 | Block = character + `lines[]`, each line has its own `next`; no block types | `line` → one line; `choice` options → lines; the `choice` block's text becomes a separate block of the same character before the choice |
+| 3 | New kind of `next`: `{ type: "scene", sceneId }` — jump to the start of another scene | Data unchanged, version number only |
+| 4 | Optional block field `pos: { x, y }` — manual canvas position | Data unchanged, version number only |
 
-## 8. Формат експорту
+## 8. Export format
 
-Окремий формат, який генерується з проєкту функцією `toExport(project)` у `core/export`. Експорт можливий лише коли в проєкті немає помилок, тому формат експорту **суворіший** за формат сховища: усі виходи підключені, персонажі задані.
+A separate format generated from the project by `toExport(project)` in `core/export`. Export is possible only when the project has no errors, so the export format is **stricter** than the storage format: all outputs are connected, characters are set.
 
-| Відмінність від сховища | Чому |
+| Difference from storage | Why |
 |---|---|
-| Окремі `format` і `version` | Незалежна еволюція |
-| Колекції — **масиви** у правильному порядку (персонажі, сцени), а не `Record` + `order` | Споживачу простіше ітерувати |
-| Блоки сцени впорядковані обходом від стартового блоку | Файл читається як сценарій |
-| `next` ніколи не `null`, `characterId` ніколи не `null` | Гарантовано відсутністю помилок |
-| `builtIn: "author"` → `isAuthor: true` | Зрозуміліше стороннім |
-| Додано `exportedAt`, `appVersion` | Відстеження походження файлу |
+| Separate `format` and `version` | Independent evolution |
+| Collections are **arrays** in the right order (characters, scenes), not `Record` + `order` | Easier for consumers to iterate |
+| A scene's blocks are ordered by the walk from the start block | The file reads like a script |
+| `next` is never `null`, `characterId` is never `null` | Guaranteed by the absence of errors |
+| `builtIn: "author"` → `isAuthor: true` | Clearer to third parties |
+| `pos` is dropped | Canvas layout is not part of the dialogue |
+| `exportedAt`, `appVersion` added | Tracking where the file came from |
 
 ```ts
 export const ExportNext = z.discriminatedUnion("type", [
@@ -368,30 +373,29 @@ export const ExportV1 = z.object({
 });
 ```
 
-> Порожня сцена (без блоків) не має `startBlockId`. У експорт такі сцени **не потрапляють**.
+> An empty scene (no blocks) has no `startBlockId`. Such scenes are **not included** in the export.
 
-### Версіонування експорту
+### Export versioning
 
-- `version` експорту піднімається при будь-якій зміні його структури. Кожна версія фіксується в журналі змін нижче.
-- Застосунок завжди експортує **останню** версію формату.
-- **Імпорт** приймає всі версії експорту, що будь-коли виходили: `migrations/export` доводять старий файл до поточної версії, а `fromExport()` перетворює його на новий проєкт (з новим `prj_` ID).
-- Зміна внутрішнього формату сховища **не змушує** змінювати формат експорту: оновлюється лише `toExport()`.
+- The export `version` is bumped on any change of its structure. Each version is recorded in the changelog below.
+- The app always exports the **latest** format version.
+- **Import** accepts every export version ever released: `migrations/export` bring an old file up to the current version, and `fromExport()` turns it into a new project (with a new `prj_` ID).
+- A change of the internal storage format **does not force** a change of the export format: only `toExport()` is updated.
 
-### Журнал змін формату експорту
+### Export format changelog
 
-| Версія | Зміни |
+| Version | Changes |
 |---|---|
-| 1 | Початкова версія |
+| 1 | Initial version |
 
-## 9. Розширення в майбутньому
+## 9. Future extensions
 
-| Фіча | Як ляже в схему |
+| Feature | How it fits the schema |
 |---|---|
-| Блоки-дії | Окремий вид вузла (поле `kind` у блоку) з полем `next` |
-| Змінні та умови | `project.variables` + `line.condition` |
-| Емоція, нотатки, теги блоку | Нові поля в `BlockBase` |
-| Аватар, позначка «гравець» | Нові поля в `Character` |
-| Ручні позиції вузлів | `scene.layout: Record<BlockId, {x, y}>` |
-| Локалізація | `text` стає `string \| Record<Locale, string>` або виноситься в таблицю рядків |
+| Action blocks | A separate kind of node (a `kind` field on the block) with a `next` field |
+| Variables and conditions | `project.variables` + `line.condition` |
+| Emotion, notes, block tags | New fields on the block |
+| Avatar, "player" flag | New fields on `Character` |
+| Content localization | `text` becomes `string \| Record<Locale, string>` or moves to a string table |
 
-Кожна з цих змін піднімає `version` сховища (з міграцією) і, якщо вона потрапляє в експорт, — `version` експорту.
+Each of these changes bumps the storage `version` (with a migration) and, if it reaches the export, the export `version`.

@@ -7,8 +7,8 @@ import { useAutoFocus } from "./useAutoFocus";
 
 type Props = {
   /**
-   * Вибір зроблено. Для нового персонажа приходить проміс: створення йде у фоні,
-   * а поле тексту відкривається одразу, щоб не губились перші натиснуті літери.
+   * A choice was made. For a new character a promise arrives: creation runs in the background
+   * while the text field opens right away, so the first typed letters are not lost.
    */
   onPick: (characterId: CharacterId | Promise<CharacterId | undefined>, name: string) => void;
   onCancel: () => void;
@@ -18,9 +18,9 @@ type Props = {
 type Option = { kind: "character"; character: Character } | { kind: "create"; name: string };
 
 /**
- * Вибір персонажа (FLOWS.md, 4): у порядку списку персонажів, фільтр під час набору,
- * ↑/↓ і Enter, а якщо такого імені немає — «+ Створити персонажа».
- * Точний збіг і збіг з початку імені стоять першими; якщо таких немає, першим іде «Створити».
+ * Character picker (FLOWS.md, 4): in character-list order, filtered while typing,
+ * ↑/↓ and Enter, and if no such name exists — "+ Create character".
+ * An exact match and a prefix match come first; if there are none, "Create" comes first.
  */
 export function CharacterPicker({ onPick, onCancel, current }: Props) {
   const project = useApp((s) => s.project)!;

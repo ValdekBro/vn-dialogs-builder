@@ -26,14 +26,14 @@ pre {
 }
 
 /*
- * React Flow вимикає наведення на зв'язки, які не можна вибрати (клас `inactive`).
- * Нам наведення потрібне: на ньому з'являються кнопки «Вставити блок» і «Відключити».
+ * React Flow disables hover on links that cannot be selected (`inactive` class).
+ * We need hover: it shows the "Insert block" and "Disconnect" buttons.
  */
 .vn-canvas .react-flow__edge.inactive {
   pointer-events: visibleStroke;
 }
 
-/* Кнопки на зв'язках — над усім, зокрема над зв'язками назад, які малюються поверх блоків. */
+/* Buttons on links — above everything, including back links drawn over blocks. */
 .vn-canvas .react-flow__edgelabel-renderer {
   z-index: 1001;
 }

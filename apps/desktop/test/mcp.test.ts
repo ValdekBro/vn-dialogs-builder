@@ -13,8 +13,8 @@ import { SettingsStore } from "../src/main/persistence/settings";
 import { ProjectStore } from "../src/main/project-store/project-store";
 
 /**
- * MCP-сервер зі справжнім MCP-клієнтом через HTTP (TESTING.md): агент пише сцену «Ранок у селі»,
- * читає її, правки, видалення з підтвердженням людини.
+ * The MCP server with a real MCP client over HTTP (TESTING.md): an agent writes the «Ранок у селі» scene,
+ * reads it, edits, and deletes with human approval.
  */
 
 const TOKEN = "test-token-0123456789abcdef";
@@ -46,7 +46,7 @@ beforeEach(async () => {
   confirm = true;
   approvals = new Approvals({ enabled: () => confirm, timeoutSec: () => 1, onShow: (r) => shown.push(r) });
   server = new McpHttpServer({ store, approvals, version: "9.9.9" });
-  await server.start(0, TOKEN); // 0 — вільний порт
+  await server.start(0, TOKEN); // 0 — a free port
 });
 
 afterEach(async () => {
@@ -129,7 +129,7 @@ describe("MCP server", () => {
       ],
     });
     expect(chain.blockIds).toHaveLength(3);
-    expect(chain.issues.errors).toBe(1); // хвіст ланцюжка ще не підключено
+    expect(chain.issues.errors).toBe(1); // the chain's tail is not connected yet
 
     const tree = await call(client, "add_tree", {
       sceneId,
@@ -159,7 +159,7 @@ describe("MCP server", () => {
     expect(outline).toContain(`↪ ${tree.blockIds.well}`);
     expect(outline).toContain("■ КІНЕЦЬ");
 
-    // Зміни агента — з позначкою source: "agent" і по одному кроку undo на виклик.
+    // Agent changes are marked source: "agent", one undo step per call.
     const found = await call(client, "find_blocks", { query: "відра", character: "Бен" });
     expect(found.results).toHaveLength(1);
     const ben = await call(client, "get_block", { blockId: found.results[0].block.id });
@@ -189,7 +189,7 @@ describe("MCP server", () => {
       end: { type: "end" },
     });
 
-    // Людина відхиляє.
+    // The human rejects.
     const rejected = call(client, "delete_blocks", { blockIds: [blockIds[1]], reason: "Зайвий опис" });
     await waitFor(() => shown.at(-1));
     const req = shown.at(-1)!;
@@ -199,7 +199,7 @@ describe("MCP server", () => {
     expect(await rejected).toEqual({ status: "rejected" });
     expect(store.activeProject!.scenes[sceneId]!.blocks[blockIds[1]]).toBeDefined();
 
-    // Людина погоджується.
+    // The human approves.
     const approved = call(client, "delete_blocks", { blockIds: [blockIds[1]] });
     await waitFor(() => shown.at(-1));
     approvals.respond(shown.at(-1)!.id, true);
@@ -208,7 +208,7 @@ describe("MCP server", () => {
     expect(res.danglingOutputs).toHaveLength(1);
     expect(res.issues.errors).toBe(1);
 
-    // Людина не відповіла (таймаут 1 с у тесті).
+    // The human did not answer (1 s timeout in the test).
     const line = await call(client, "add_line", { blockId: blockIds[0], text: "Ще варіант" });
     const t = await call(client, "delete_line", { lineId: line.lines[1].id });
     expect(t).toEqual({ status: "timeout" });
@@ -223,7 +223,7 @@ describe("MCP server", () => {
       character: "Автор",
       lines: [{ text: TEXT.accept }, { text: TEXT.decline }],
     });
-    // Перейменування варіанта — одразу.
+    // Renaming an option — applied at once.
     const edited = await call(client, "update_block", {
       blockId: block.id,
       lines: [{ id: block.lines[0].id, text: TEXT.accept }, { id: block.lines[1].id, text: "Ні, дякую." }],
@@ -231,7 +231,7 @@ describe("MCP server", () => {
     expect(edited.lines[1].text).toBe("Ні, дякую.");
     expect(shown).toHaveLength(0);
 
-    // Прибирання варіанта — з підтвердженням; вимкнене підтвердження пропускає запит.
+    // Removing an option — with approval; disabled approval skips the request.
     confirm = false;
     const dropped = await call(client, "update_block", { blockId: block.id, lines: [{ id: block.lines[0].id, text: TEXT.accept }] });
     expect(dropped).toMatchObject({ status: "approved", lines: [{ text: TEXT.accept }] });

@@ -21,8 +21,8 @@ export const BLOCK_WIDTH = 260;
 type BlockProj = Extract<ProjNode, { kind: "block" }>;
 
 /**
- * Блок на полотні (FLOWS.md, 2, 6, 7): персонаж і його репліки, кожна зі своїм виходом праворуч.
- * Одна репліка — звичайний крок діалогу, кілька — вибір.
+ * A block on the canvas (FLOWS.md, 2, 6, 7): a character and their lines, each with its own output on the right.
+ * One line is an ordinary dialogue step, several are a choice.
  */
 export function BlockNode({ data, selected }: NodeProps) {
   const { node } = data as { node: BlockProj };
@@ -31,15 +31,15 @@ export function BlockNode({ data, selected }: NodeProps) {
   const character = useApp((s) => (block?.characterId ? s.project?.characters[block.characterId] : undefined));
   const editing = useCanvas((s) => s.editing);
   const flash = useCanvas((s) => s.flash === node.blockId);
-  // Агент щойно змінив блок — світиться; агент просить видалити — червона рамка (FLOWS.md, 14).
+  // The agent just changed the block — it glows; the agent asks to delete it — red frame (FLOWS.md, 14).
   const glowing = useAgent((s) => s.glowing.has(node.blockId));
   const doomed = useAgent((s) => !!s.approval?.blockIds.includes(node.blockId));
-  // Під час перетягування від виходу підсвічуємо блоки, до яких можна під'єднати.
+  // While dragging from an output, highlight the blocks it can be connected to.
   const dragFrom = useConnection((c) => (c.inProgress ? c.fromNode.id : null));
   if (!block) return null;
   const dropTarget = dragFrom !== null && linkTargets(scene, dragFrom).includes(block.id);
 
-  // Непідключені виходи вже видно з червоного (+), тож рамку блоку вони не фарбують.
+  // Dangling outputs are already visible by the red (+), so they do not colour the block frame.
   const issues = (issuesByBlock.get(block.id) ?? []).filter((i) => i.code !== "dangling_output");
   const isChoice = block.lines.length > 1;
   const pickingCharacter = editing?.kind === "character" && editing.blockId === block.id;
@@ -63,7 +63,7 @@ export function BlockNode({ data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} id="in" isConnectableStart={false} className="!z-10 !h-2 !w-2 !border-0 !bg-zinc-500" />
       <Toolbar block={block} isStart={node.isStart} />
 
-      {/* Заголовок — ручка перетягування: тягнути можна за будь-яке місце, крім імені й позначок (FLOWS.md, 8a). */}
+      {/* The header is the drag handle: it can be grabbed anywhere except the name and badges (FLOWS.md, 8a). */}
       <div
         data-testid="drag-handle"
         className="vn-drag flex cursor-grab items-center gap-2 rounded-t-lg px-3 pb-1 pt-2 hover:bg-zinc-800/50 active:cursor-grabbing"
@@ -243,7 +243,7 @@ function LineRow({ block, line, isChoice }: { block: Block; line: Line; isChoice
   );
 }
 
-/** Поле нової репліки-варіанта: Enter — додати й одразу наступну, Enter на порожньому або Esc — готово. */
+/** Input for a new option line: Enter adds it and starts the next one, Enter on empty or Esc — done. */
 function NewLineInput({ blockId, index }: { blockId: string; index: number }) {
   const [value, setValue] = useState("");
   const ref = useAutoFocus<HTMLInputElement>();
@@ -284,7 +284,7 @@ function NewLineInput({ blockId, index }: { blockId: string; index: number }) {
   );
 }
 
-/** Багаторядкове поле тексту репліки: Enter — зберегти, Shift+Enter — новий рядок, Esc — скасувати. */
+/** Multiline line-text input: Enter saves, Shift+Enter inserts a newline, Esc cancels. */
 export function TextEditor(props: { initial: string; placeholder?: string; onDone: (text: string | null) => void }) {
   const [value, setValue] = useState(props.initial);
   const ref = useAutoFocus<HTMLTextAreaElement>();

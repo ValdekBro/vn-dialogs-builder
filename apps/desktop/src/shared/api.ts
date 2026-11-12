@@ -2,19 +2,19 @@ import type { ChangeSource, Project } from "@vn/core";
 import type { Patch } from "immer";
 
 /**
- * Контракт між головним процесом і вікном. Його використовують main (обробники IPC),
- * preload (міст) і renderer (виклики). Тут лише типи й назви каналів, без коду Electron.
+ * Contract between the main process and the window. Used by main (IPC handlers),
+ * preload (the bridge) and renderer (calls). Only types and channel names here, no Electron code.
  */
 
-/** Картка проєкту на екрані «Проєкти». Будується скануванням теки `projects/`. */
+/** Project card on the "Projects" screen. Built by scanning the `projects/` folder. */
 export type ProjectSummary = {
   id: string;
   name: string;
   description: string;
   sceneCount: number;
-  /** Час останньої зміни файлу, мс. */
+  /** File modification time, ms. */
   updatedAt: number;
-  /** Файл не можна відкрити: створено новішою версією застосунку або файл пошкоджено. */
+  /** The file cannot be opened: created by a newer app version, or corrupted. */
   problem?: "too_new" | "invalid";
 };
 
@@ -27,33 +27,33 @@ export type HistoryState = {
 
 export type SaveState = "saved" | "dirty" | "saving" | "error";
 
-/** Знімок відкритого проєкту для вікна. */
+/** Snapshot of the open project for the window. */
 export type SessionSnapshot = {
   project: Project;
-  /** Лічильник змін: кожна подія `changed` збільшує його на 1. Розрив означає, що вікно має перечитати знімок. */
+  /** Change counter: every `changed` event increments it by 1. A gap means the window must reload the snapshot. */
   version: number;
   history: HistoryState;
   save: SaveState;
 };
 
 /**
- * Стан оновлення застосунку (ARCHITECTURE.md, «Оновлення»).
- * `unsupported` — у цій збірці оновлення не працюють (запуск з коду або Linux).
+ * App update state (ARCHITECTURE.md, "Updates").
+ * `unsupported` — updates do not work in this build (running from source, or Linux).
  */
 export type UpdateState =
   | { status: "unsupported"; reason: "dev" | "platform" }
   | { status: "idle" }
   | { status: "checking" }
   | { status: "latest" }
-  /** `manual` — встановити самому застосунок не може (macOS без Developer ID): кнопка відкриває сторінку релізу. */
+  /** `manual` — the app cannot install by itself (macOS without Developer ID): the button opens the release page. */
   | { status: "available"; version: string; manual?: boolean }
   | { status: "downloading"; version: string; percent: number }
   | { status: "installing"; version: string }
   | { status: "error"; message: string; version?: string };
 
 /**
- * Запит агента на видалення, що чекає рішення людини (MCP.md, 5.9).
- * `items` — що саме зникне (людською мовою), `blockIds` — що підсвітити на полотні.
+ * An agent deletion request waiting for the human's decision (MCP.md, 5.9).
+ * `items` — what exactly disappears (in plain language), `blockIds` — what to highlight on the canvas.
  */
 export type ApprovalRequest = {
   id: string;
@@ -63,42 +63,42 @@ export type ApprovalRequest = {
   reason: string | null;
   sceneId: string | null;
   blockIds: string[];
-  /** Коли запит зніметься сам, мс від епохи. */
+  /** When the request expires by itself, ms since epoch. */
   expiresAt: number;
 };
 
-/** Стан MCP-сервера для підказки «Підключити агента» (MCP.md, 2). */
+/** MCP server state for the "Connect an agent" hint (MCP.md, 2). */
 export type McpInfo = {
   running: boolean;
   url: string;
   port: number;
   token: string;
-  /** Готова команда для Claude Code. */
+  /** Ready-made command for Claude Code. */
   command: string;
   error: string | null;
 };
 
 /**
- * Підключення до застосунку Claude для комп'ютера (MCP.md, 2): він уміє лише локальні
- * stdio-сервери, тож VNami записує в його конфіг міст (`entry`).
+ * Connecting to the Claude desktop app (MCP.md, 2): it only supports local
+ * stdio servers, so VNami writes a bridge into its config (`entry`).
  */
 export type ClaudeDesktopStatus = {
-  /** На цій ОС застосунок Claude є (macOS, Windows). */
+  /** The Claude app exists on this OS (macOS, Windows). */
   supported: boolean;
-  /** Claude встановлений (є його папка з налаштуваннями). */
+  /** Claude is installed (its settings folder exists). */
   found: boolean;
-  /** У конфігу Claude вже є саме цей запис `vnami`. */
+  /** Claude's config already has exactly this `vnami` entry. */
   connected: boolean;
   configPath: string | null;
   entry: { command: string; args: string[]; env: Record<string, string> };
 };
 
-/** Остання дія агента — для індикатора у верхній панелі. */
+/** The agent's last action — for the top bar indicator. */
 export type AgentActivity = { tool: string; at: number };
 
 export type AppInfo = { version: string; update: UpdateState; releasesUrl: string };
 
-/** Події з головного процесу у вікно. */
+/** Events from the main process to the window. */
 export type SessionEvent =
   | { type: "opened"; snapshot: SessionSnapshot }
   | { type: "closed" }
@@ -118,12 +118,12 @@ export type SessionEvent =
   | { type: "agent"; activity: AgentActivity }
   | { type: "mcp"; mcp: McpInfo };
 
-/** Помилка, що пройшла через IPC. Коди ядра + власні коди застосунку. */
+/** An error that passed through IPC. Core codes + the app's own codes. */
 export type ApiError = { code: string; message: string; details?: unknown };
 
 export type ApiResult<T> = { ok: true; value: T } | { ok: false; error: ApiError };
 
-/** Команди ядра, які вікну дозволено викликати (білий список). */
+/** Core commands the window may call (allowlist). */
 export const ALLOWED_COMMANDS = [
   "updateProject",
   "createCharacter",
@@ -152,15 +152,15 @@ export const ALLOWED_COMMANDS = [
 
 export type CommandName = (typeof ALLOWED_COMMANDS)[number];
 
-/** Канали IPC. */
+/** IPC channels. */
 export const IPC = {
   invoke: "vn:invoke",
   event: "vn:event",
 } as const;
 
 /**
- * Методи, які вікно викликає через один канал `vn:invoke`.
- * Ключ — назва методу, значення — [аргументи, результат].
+ * Methods the window calls through the single `vn:invoke` channel.
+ * Key — method name, value — [arguments, result].
  */
 export type ApiMethods = {
   "projects.list": [[], ProjectSummary[]];
@@ -175,15 +175,15 @@ export type ApiMethods = {
   "session.undo": [[], string | null];
   "session.redo": [[], string | null];
   "app.info": [[], AppInfo];
-  /** Перевірити зараз (кнопка «Перевірити оновлення»). Результат приходить подією `update`. */
+  /** Check now (the "Check for updates" button). The result arrives as an `update` event. */
   "update.check": [[], void];
-  /** Завантажити, встановити й перезапуститися — кнопка «Оновити». */
+  /** Download, install and restart — the "Update" button. */
   "update.install": [[], void];
   "mcp.info": [[], McpInfo];
   "claude.status": [[], ClaudeDesktopStatus];
-  /** Записати VNami в конфіг застосунку Claude (кнопка «Підключити до Claude»). */
+  /** Write VNami into the Claude app config (the "Connect to Claude" button). */
   "claude.install": [[], ClaudeDesktopStatus];
-  /** Поточний запит на підтвердження (якщо вікно відкрилось, поки він чекав). */
+  /** The current approval request (if the window opened while it was waiting). */
   "approval.current": [[], ApprovalRequest | null];
   "approval.respond": [[id: string, approved: boolean], void];
 };

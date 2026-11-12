@@ -4,7 +4,7 @@ import type { BlockId, LineId, Next } from "../schema/entities";
 import { requireText } from "./blocks";
 import { defineCommand, requirePermutation, validateNext } from "./util";
 
-/** Команди над репліками блоку. Дві й більше реплік у блоці — це вибір (FLOWS.md, 6). */
+/** Commands on a block's lines. Two or more lines in a block make a choice (FLOWS.md, 6). */
 
 export type AddLineArgs = { blockId: BlockId; text: string; index?: number; next?: Next };
 
@@ -37,7 +37,7 @@ export const updateLine = defineCommand({
 
 export type DeleteLineArgs = { lineId: LineId };
 
-/** Остання репліка не видаляється: блок без реплік не має сенсу — видаліть блок. */
+/** The last line cannot be deleted: a block without lines makes no sense — delete the block. */
 export const deleteLine = defineCommand({
   name: "deleteLine",
   label: () => "Видалити репліку",

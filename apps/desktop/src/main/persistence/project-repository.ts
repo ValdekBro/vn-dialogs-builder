@@ -16,17 +16,17 @@ import { writeFileAtomic } from "./fs-atomic";
 const PROJECT_FILE = /^(prj_[A-Za-z0-9_-]{10})\.json$/;
 
 export type ProjectRepositoryOptions = {
-  /** Тека `projects/` у сховищі застосунку. */
+  /** The `projects/` folder in the app's storage. */
   dir: string;
   appVersion: string;
-  /** Як видаляти файл проєкту. У застосунку — у системний кошик, щоб можна було відновити. */
+  /** How to delete a project file. In the app — to the system trash, so it can be restored. */
   trash?: (path: string) => Promise<void>;
   newId?: IdGenerator;
 };
 
 /**
- * Файли проєктів (ARCHITECTURE.md, розділ 5). Один проєкт — один файл `<projectId>.json`.
- * Окремого індексу немає: список будується скануванням теки.
+ * Project files (ARCHITECTURE.md, section 5). One project — one `<projectId>.json` file.
+ * There is no separate index: the list is built by scanning the folder.
  */
 export class ProjectRepository {
   readonly dir: string;
@@ -72,8 +72,8 @@ export class ProjectRepository {
   }
 
   /**
-   * Читає проєкт. Якщо файл старішої версії, поруч одразу кладеться резервна копія оригіналу
-   * (SCHEMA.md, розділ 7), а перший запис уже буде в новому форматі.
+   * Reads a project. If the file is an older version, a backup of the original is put next to it right away
+   * (SCHEMA.md, section 7), and the first write is already in the new format.
    */
   async load(id: string): Promise<Project> {
     const text = await readFile(this.pathOf(id), "utf8");
@@ -106,7 +106,7 @@ export class ProjectRepository {
     await this.save({ ...project, name: requireName(name) });
   }
 
-  /** Копія з новим ID проєкту. ID усередині (персонажі, сцени, блоки) унікальні лише в межах проєкту, тож лишаються. */
+  /** A copy with a new project ID. IDs inside (characters, scenes, blocks) are unique only within a project, so they stay. */
   async duplicate(id: string): Promise<Project> {
     const project = await this.load(id);
     const copy: Project = { ...project, id: this.#newId("prj"), name: `${project.name} (копія)` };
@@ -130,7 +130,7 @@ function summarize(id: string, text: string, updatedAt: number): ProjectSummary 
       updatedAt,
     };
   } catch (e) {
-    // Неможливий для відкриття файл усе одно показуємо, щоб людина знала про нього.
+    // A file that cannot be opened is still listed, so the person knows about it.
     const raw = safeJson(text);
     return {
       id,

@@ -1,13 +1,13 @@
 import { useLayoutEffect, useRef } from "react";
 
 /**
- * Фокус на полі всередині вузла полотна. React Flow ховає вузол (visibility: hidden), доки не виміряє його,
- * а приховане поле фокус не приймає. Тому пробуємо кілька кадрів, доки фокус не «встане».
+ * Focus on an input inside a canvas node. React Flow hides a node (visibility: hidden) until it measures it,
+ * and a hidden input does not accept focus. So we retry for a few frames until focus sticks.
  */
 export function useAutoFocus<T extends HTMLInputElement | HTMLTextAreaElement>(select = false) {
   const ref = useRef<T>(null);
-  // useLayoutEffect: фокус ставиться ще до того, як браузер обробить наступне натискання клавіші,
-  // тож перша літера після вибору персонажа не губиться.
+  // useLayoutEffect: focus is set before the browser handles the next key press,
+  // so the first letter after picking a character is not lost.
   useLayoutEffect(() => {
     let frames = 0;
     let id = 0;

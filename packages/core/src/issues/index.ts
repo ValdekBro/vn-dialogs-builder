@@ -1,7 +1,7 @@
 import { reachableBlocks } from "../queries";
 import type { BlockId, LineId, Project, Scene, SceneId } from "../schema/entities";
 
-/** Проблеми (SCHEMA.md, розділ 5). Не зберігаються, завжди обчислюються з моделі. */
+/** Issues (SCHEMA.md, section 5). Never stored, always computed from the model. */
 export type IssueCode =
   | "missing_start"
   | "unreachable"
@@ -18,7 +18,7 @@ export type Issue = {
   sceneId: SceneId;
   blockId?: BlockId;
   lineId?: LineId;
-  /** Людський опис українською: його бачить і людина в UI, і агент. */
+  /** Human-readable description (UI language): both the user in the UI and the agent see it. */
   message: string;
 };
 
@@ -32,8 +32,8 @@ export const ISSUE_SEVERITY: Record<IssueCode, IssueSeverity> = {
 };
 
 /**
- * Проблеми сцени. `project` потрібен лише для перевірки переходів в інші сцени:
- * перехід у сцену без стартового блоку нікуди не веде.
+ * Scene issues. `project` is needed only to check jumps to other scenes:
+ * a jump to a scene without a start block leads nowhere.
  */
 export function sceneIssues(scene: Scene, project?: Project): Issue[] {
   const out: Issue[] = [];
@@ -49,7 +49,7 @@ export function sceneIssues(scene: Scene, project?: Project): Issue[] {
   for (const id of blockIds) {
     const block = scene.blocks[id]!;
     const ids = { blockId: block.id };
-    // Без старту недосяжне все, але це вже покриває missing_start.
+    // Without a start everything is unreachable, but missing_start already covers that.
     if (scene.startBlockId !== null && !reachable.has(block.id)) {
       add("unreachable", "Блок недосяжний від стартового", ids);
     }
@@ -70,7 +70,7 @@ export function sceneIssues(scene: Scene, project?: Project): Issue[] {
   return out;
 }
 
-/** Усі проблеми проєкту в порядку сцен або однієї сцени. */
+/** All project issues in scene order, or for one scene. */
 export function projectIssues(project: Project, sceneId?: SceneId): Issue[] {
   const ids = sceneId !== undefined ? [sceneId] : project.sceneOrder;
   return ids.flatMap((id) => {
@@ -91,7 +91,7 @@ export function countIssues(issues: Issue[]): IssueCounts {
   return { errors, warnings };
 }
 
-/** Експорт дозволений лише без помилок; попередження не блокують. */
+/** Export is allowed only without errors; warnings do not block it. */
 export function canExport(project: Project): boolean {
   return projectIssues(project).every((i) => i.severity !== "error");
 }

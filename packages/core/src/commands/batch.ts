@@ -4,14 +4,14 @@ import type { Block, BlockId, Line, Next, Output, Project, SceneId } from "../sc
 import { requireText } from "./blocks";
 import { defineCommand, resolveOutputInScene, validateNext } from "./util";
 
-/** Персонаж за ID або точним ім'ям; `null` — без персонажа. */
+/** Character by ID or exact name; `null` means no character. */
 export type CharacterRef = string | null;
 
 function characterIdOf(project: Project, ref: CharacterRef): string | null {
   return ref === null ? null : resolveCharacter(project, ref).id;
 }
 
-/** Підключає ланцюжок/дерево до `from`. Повертає `next`, що переходить далі при вставці. */
+/** Connects a chain/tree to `from`. Returns the `next` that is carried over on insert. */
 function attach(draft: Project, sceneId: SceneId, from: Output | undefined, insert: boolean | undefined) {
   if (insert && !from) throw invalid("insert requires from");
   if (!from) return { carried: undefined, connect: undefined };
@@ -30,11 +30,11 @@ export type AddChainArgs = {
   from?: Output;
   insert?: boolean;
   lines: { character: CharacterRef; text: string }[];
-  /** `next` останнього блоку; за замовчуванням `null`. Несумісний з `insert`. */
+  /** `next` of the last block; `null` by default. Incompatible with `insert`. */
   end?: Next;
 };
 
-/** Лінійний діалог одним кроком undo (MCP.md, 5.7). */
+/** A linear dialogue as one undo step (MCP.md, 5.7). */
 export const addChain = defineCommand({
   name: "addChain",
   label: (a: AddChainArgs) => `Додати ланцюжок (${a.lines.length})`,
@@ -61,7 +61,7 @@ export const addChain = defineCommand({
 });
 
 /**
- * Вузол дерева: одна репліка (`text` + `next`) або кілька — вибір (`lines`).
+ * Tree node: one line (`text` + `next`) or several — a choice (`lines`).
  */
 export type TreeNode = {
   label?: string;
@@ -77,8 +77,8 @@ export type AddTreeArgs = {
   sceneId: SceneId;
   from?: Output;
   /**
-   * Вставити дерево між `from` і його старим `next`. Старий `next` отримують усі виходи
-   * дерева, у яких `next` не вказано зовсім (явний `null` лишається `null`).
+   * Insert the tree between `from` and its old `next`. The old `next` goes to every tree output
+   * whose `next` is not given at all (an explicit `null` stays `null`).
    */
   insert?: boolean;
   root: TreeNode;
@@ -88,7 +88,7 @@ function isNode(t: TreeTarget | undefined): t is TreeNode {
   return typeof t === "object" && t !== null && "character" in t;
 }
 
-/** Розгалужена гілка одним кроком undo (MCP.md, 5.7). Мітки дозволяють сходження в межах виклику. */
+/** A branching part as one undo step (MCP.md, 5.7). Labels allow convergence within one call. */
 export const addTree = defineCommand({
   name: "addTree",
   label: () => "Додати гілку",
@@ -96,7 +96,7 @@ export const addTree = defineCommand({
     const scene = getScene(draft, args.sceneId);
     const { carried, connect } = attach(draft, scene.id, args.from, args.insert);
 
-    // Прохід 1: ID для кожного вузла, мітки.
+    // Pass 1: an ID for every node, labels.
     const nodeIds = new Map<TreeNode, BlockId>();
     const labels = new Map<string, BlockId>();
     const keys: Record<string, BlockId> = {};
@@ -123,7 +123,7 @@ export const addTree = defineCommand({
     };
     visit(args.root);
 
-    // Прохід 2: блоки.
+    // Pass 2: blocks.
     const resolve = (t: TreeTarget | undefined): Next => {
       if (t === undefined) return carried !== undefined ? carried : null;
       if (t === null) return null;

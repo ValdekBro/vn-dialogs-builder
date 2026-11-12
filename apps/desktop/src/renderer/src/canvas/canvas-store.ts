@@ -2,18 +2,18 @@ import type { BlockId, LineId } from "@vn/core";
 import { create } from "zustand";
 import type { Draft } from "./projection";
 
-/** Стан полотна, що не належить моделі: чернетка, редагування, режим з'єднання, фокус. */
+/** Canvas state that is not part of the model: draft, editing, connect mode, focus. */
 export type CanvasState = {
   draft: Draft | null;
-  /** Що зараз редагується прямо на блоці. */
+  /** What is being edited right on the block. */
   editing:
     | null
     | { kind: "line"; lineId: LineId }
     | { kind: "character"; blockId: BlockId }
     | { kind: "newLine"; blockId: BlockId };
-  /** Вузол (блок або чернетка), до якого треба прокрутити полотно після наступної розкладки. */
+  /** The node (block or draft) to scroll the canvas to after the next layout. */
   focus: { nodeId: string; flash: boolean } | null;
-  /** Блок, що зараз коротко підсвічений (перехід за посиланням `↪`). */
+  /** The block that is briefly highlighted (following a `↪` reference). */
   flash: BlockId | null;
   hoveredEdge: string | null;
 };
@@ -39,7 +39,7 @@ export function focusBlock(nodeId: string, flash = false) {
 }
 
 let edgeTimer: ReturnType<typeof setTimeout> | null = null;
-/** Наведення на зв'язок: прибираємо з затримкою, щоб встигнути довести мишу до кнопок посередині. */
+/** Link hover: cleared with a delay so the mouse has time to reach the buttons in the middle. */
 export function hoverEdge(id: string | null) {
   if (edgeTimer) clearTimeout(edgeTimer);
   edgeTimer = null;

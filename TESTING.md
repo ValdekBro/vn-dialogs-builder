@@ -1,119 +1,120 @@
 # VNami — Testing
 
-> Як перевіряємо застосунок. Функціонал описано в [OVERVIEW.md](OVERVIEW.md), сценарії інтерфейсу — у [FLOWS.md](FLOWS.md), архітектуру — в [ARCHITECTURE.md](ARCHITECTURE.md).
+> How the app is tested. Features are described in [OVERVIEW.md](OVERVIEW.md), UI scenarios in [FLOWS.md](FLOWS.md), the architecture in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## 1. Рівні тестів
+## 1. Test levels
 
-| Рівень | Інструмент | Що перевіряє | Де лежить |
+| Level | Tool | What it checks | Location |
 |---|---|---|---|
-| Юніт | **Vitest** | Ядро: схеми, команди, undo/redo, проблеми, експорт | `packages/core/test` |
-| Інтеграційні MCP | **Vitest** + справжній MCP-клієнт із SDK | Інструменти MCP через HTTP над `ProjectStore`, без вікна | `apps/desktop/test/mcp` |
-| **E2E** | **Playwright** (`_electron`) | **Справжній застосунок**: запуск, кліки, введення тексту, перезапуск, робота разом з агентом | `apps/desktop/e2e` |
+| Unit | **Vitest** | Core: schemas, commands, undo/redo, issues, export | `packages/core/test` |
+| MCP integration | **Vitest** + a real MCP client from the SDK | MCP tools over HTTP on top of `ProjectStore`, without a window; the stdio bridge for the Claude app | `apps/desktop/test` |
+| **E2E** | **Playwright** (`_electron`) | **The real app**: launch, clicks, typing, restart, working together with an agent | `apps/desktop/e2e` |
 
-Основна логіка покрита юніт-тестами, бо вони швидкі. E2E перевіряють те, чого юніт-тести не бачать: інтерфейс, міст між вікном і головним процесом (IPC, preload), збереження на диск і MCP поверх відкритого вікна.
+The core logic is covered by unit tests because they are fast. E2E tests check what unit tests cannot see: the UI, the bridge between the window and the main process (IPC, preload), saving to disk, and MCP on top of an open window.
 
-## 2. E2E: справжній застосунок, а не симуляція
+## 2. E2E: the real app, not a simulation
 
-E2E-тест **запускає зібраний Electron-застосунок** через `_electron.launch()` з Playwright і працює з вікном так само, як людина: клікає кнопки, набирає текст, перетягує зв'язки, натискає Ctrl/Cmd+Z, закриває й знову відкриває застосунок.
+An E2E test **launches the built Electron app** via Playwright's `_electron.launch()` and works with the window like a person: clicks buttons, types text, drags links, presses Ctrl/Cmd+Z, closes and reopens the app.
 
-- Симуляцію (вікно в браузері з підробленим IPC) не використовуємо як основний рівень. Вона пропускає саме ті помилки, заради яких потрібні E2E: preload, IPC, файли, MCP.
-- Playwright також може виконати код у головному процесі (`electronApp.evaluate`). Це потрібно для системних діалогів: тест підставляє шлях до файлу замість вікна «Зберегти як».
-- На кожен тест застосунок стартує з **чистою окремою текою даних**, тому тести не впливають один на одного і не чіпають твої справжні проєкти.
+- A simulation (the window in a browser with faked IPC) is not used as the main level. It misses exactly the bugs E2E exists for: preload, IPC, files, MCP.
+- Playwright can also run code in the main process (`electronApp.evaluate`). This is needed for system dialogs: the test substitutes a file path instead of the "Save as" window.
+- For every test the app starts with a **clean, separate data folder**, so tests do not affect each other and never touch your real projects.
+- A test must never be able to write configs of other apps on the machine (e.g. the Claude desktop app config): such paths are always overridden (`VN_CLAUDE_CONFIG`) and checked before any action that writes.
 
-## 3. Що застосунок робить заради тестованості
+## 3. What the app does for testability
 
-Це закладається, коли додаємо E2E-інфраструктуру:
+This is added together with the E2E infrastructure:
 
-1. **Тека даних з env.** `VN_USER_DATA_DIR=<тимчасова тека>` замінює `app.getPath("userData")`. Перед запуском тест може покласти туди готові проєкти (фікстури).
-2. **Тестовий режим** `VN_E2E=1`:
-   - анімації вимкнено (розкладка застосовується одразу, без плавного руху), щоб кліки не промахувались;
-   - автозбереження спрацьовує одразу після зміни, а не за таймером;
-   - MCP слухає випадковий вільний порт, а порт і токен застосунок повідомляє тесту;
-   - таймаут підтвердження видалень короткий (наприклад, 5 секунд), щоб перевірити `timeout`;
-   - вимкнено перевірку оновлень та інші фонові дії.
-3. **Стабільні селектори.**
-   - Елементи шукаємо за роллю та підписом (`getByRole("button", { name: "Додати блок" })`). Так тест водночас перевіряє доступність інтерфейсу.
-   - Де підпису немає (вузли полотна, виходи, `(+)`), ставимо `data-testid` з ID сутності: `block-<blockId>`, `add-<lineId>` для `(+)` на виході репліки.
-   - Українські підписи тест бере з того самого модуля `strings`, що й інтерфейс. Якщо змінити текст кнопки, тести не зламаються.
-4. **Стан моделі доступний тесту.** У тестовому режимі preload відкриває лише для читання `window.__vnTest.getProject()`. Тест клікає в інтерфейсі, а результат перевіряє і на екрані, і в моделі.
+1. **Data folder from env.** `VN_USER_DATA_DIR=<temp folder>` replaces `app.getPath("userData")`. Before launch a test can put ready-made projects (fixtures) there.
+2. **Test mode** `VN_E2E=1`:
+   - animations are off (the layout applies immediately, without smooth movement), so clicks do not miss;
+   - autosave fires right after a change, not on a timer;
+   - MCP listens on a random free port, and the app reports the port and token to the test;
+   - the deletion approval timeout is short (e.g. 5 seconds) to test `timeout`;
+   - update checks and other background activity are off.
+3. **Stable selectors.**
+   - Elements are found by role and label (`getByRole("button", { name: "Додати блок" })`). This way the test also checks UI accessibility.
+   - Where there is no label (canvas nodes, outputs, `(+)`), a `data-testid` with the entity ID is used: `block-<blockId>`, `add-<lineId>` for the `(+)` on a line's output.
+   - Ukrainian labels are taken from the same `strings` module the UI uses. Changing a button's text does not break tests.
+4. **The model state is available to tests.** In test mode preload exposes a read-only `window.__vnTest.getProject()`. The test clicks in the UI and checks the result both on screen and in the model.
 
-## 4. Допоміжний шар
+## 4. Helper layer
 
-Тести не працюють із сирими селекторами, а використовують об'єкти сторінок (page objects):
+Tests do not work with raw selectors; they use page objects:
 
 ```ts
-const app = await launchApp({ seed: "prologue" });     // чиста тека + фікстура
-await app.canvas.addAfter(blockId).click();            // (+) після блоку
-await app.picker.choose("Бен");                        // персонаж у чернетці блоку
+const app = await launchApp({ seed: "prologue" });     // clean folder + fixture
+await app.canvas.addAfter(blockId).click();            // (+) after a block
+await app.picker.choose("Бен");                        // character in the block draft
 await app.editor.type("Привіт, ГГ! Може, допомогти донести?").enter();
 await expect(app.canvas.block({ text: "Привіт, ГГ!" })).toHaveIssue(false);
-await app.restart();                                   // закрити й відкрити з тією ж текою
-const agent = await app.connectAgent();                // справжній MCP-клієнт
+await app.restart();                                   // close and reopen with the same folder
+const agent = await app.connectAgent();                // a real MCP client
 ```
 
-- `launchApp`, `restart`, `connectAgent` — запуск, перезапуск, підключення MCP-клієнта.
-- `canvas`, `picker`, `editor`, `characters`, `scenes`, `issues`, `projects`, `approval`, `toast` — об'єкти сторінок за розділами FLOWS.md.
-- Власні перевірки (`toHaveIssue`, `toBeConnectedTo`, `toBeHighlightedAsAgentChange`) роблять тести короткими й читабельними.
+- `launchApp`, `restart`, `connectAgent` — launch, restart, connect an MCP client.
+- `canvas`, `picker`, `editor`, `characters`, `scenes`, `issues`, `projects`, `approval`, `toast` — page objects per FLOWS.md section.
+- Custom matchers (`toHaveIssue`, `toBeConnectedTo`, `toBeHighlightedAsAgentChange`) keep tests short and readable.
 
-## 5. E2E-сценарії
+## 5. E2E scenarios
 
-Кожен сценарій прив'язаний до розділу FLOWS.md. Сценарій позначений «MVP», коли він обов'язковий до релізу MVP.
+Each scenario is tied to a FLOWS.md section.
 
-| # | Сценарій | Кроки й перевірки | FLOWS |
+| # | Scenario | Steps and checks | FLOWS |
 |---|---|---|---|
-| E1 | Перший запуск | Порожня тека → екран «Проєкти» → створити проєкт → відкрилося полотно «Сцена 1», у персонажах є «Автор» | 15 |
-| E2 | Перший блок | `(+)` на порожній сцені → вибрати «Автор» → ввести текст → Enter → блок стартовий, його вихід червоний з `(+)` | 3, 4 |
-| E3 | Ланцюжок | Кілька блоків поспіль через `(+)`; Shift+Enter робить перенос рядка; Esc скасовує привид без змін | 4 |
-| E4 | Новий персонаж з пікера | «+ Створити персонажа» → ім'я → він одразу вибраний у блоці й з'явився в розділі «Персонажі» | 4, 10 |
-| E5 | Вибір | `+ Варіант` у чернетці або під блоком → кілька реплік → `(+)` від кожної → змінити порядок перетягуванням | 6 |
-| E6 | Вставка між блоками | `(+)` на середині зв'язку → новий блок між двома, старий зв'язок продовжено | 5 |
-| E7 | Сходження | Перетягнути від виходу на наявний блок і через меню «Далі» → «З'єднати з блоком» → обидва зв'язки звичайними лініями в один блок; зв'язок назад у блок вище по гілці (цикл) малюється пунктиром і відключається | 8 |
-| E8 | Кінець сцени | `■` на виході → червоне зникає, лічильник проблем зменшився | 3, 12 |
-| E9 | Undo/redo | Серія дій → Ctrl/Cmd+Z повертає кожну → Shift+Ctrl/Cmd+Z повторює | 0 |
-| E10 | Видалення блоку | Видалити блок → тост «Скасувати» → зв'язки стали червоними → «Скасувати» все повернуло | 9 |
-| E11 | Копіювання | Скопіювати гілку → вставити в цю й іншу сцену → нові ID, окрема гілка | 9 |
-| E12 | Видалення персонажа | Підтвердження → його блоки лишились, без персонажа і червоні | 10 |
-| E13 | Сцени | Створити, перейменувати, змінити порядок, опис над полотном, видалити непорожню з підтвердженням | 11 |
-| E14 | Проблеми | Панель проблем → клік переводить до блоку → «Експорт» вимкнений, поки є помилки; попередження його не блокують | 12 |
-| E15 | Автозбереження | Зміни → перезапуск застосунку → усе на місці, відкрився останній проєкт і сцена | 15 |
-| E16 | Проєкти | Створити другий проєкт, перемкнутися, перейменувати, дублювати, видалити, редагувати лор | 15 |
-| E17 | Експорт та імпорт | Експорт у файл (діалог підмінено) → файл проходить схему → імпорт створює новий проєкт з тим самим вмістом | 15 |
-| E18 | Версії файлів | Проєкт з новішою версією → повідомлення «оновіть застосунок», файл не змінено. Старіша версія → міграція і резервна копія (з'явиться разом з v2 формату) | 15 |
-| E19 | Агент створює | MCP `add_tree` → блоки з'явилися на полотні з підсвіткою агента, тост «Показати» веде до них | 14 |
-| E20 | Агент видаляє | `delete_blocks` → панель підтвердження з підсвіченими блоками → «Відхилити» дає `rejected`; повтор → «Підтвердити» дає `approved`; без відповіді — `timeout` | 14 |
-| E21 | Агент і людина одночасно | Людина редагує текст блоку, агент змінює той самий блок → зміна агента застосовується після завершення редагування, нічого не загублено | 14 |
-| E22 | Undo дії агента | Агент додав блоки → людина натискає Ctrl/Cmd+Z → зміни агента скасовано | 14 |
-| E23 | Полотно | Масштаб, «вмістити все», згортання гілки; стан полотна зберігся після перезапуску | 1, 13 |
+| E1 | First launch | Empty folder → "Projects" screen → create a project → the "Сцена 1" canvas opens, characters include "Автор" | 15 |
+| E2 | First block | `(+)` on an empty scene → pick "Автор" → type text → Enter → the block is the start block, its output is red with `(+)` | 3, 4 |
+| E3 | Chain | Several blocks in a row via `(+)`; Shift+Enter inserts a line break; Esc cancels the draft without changes | 4 |
+| E4 | New character from the picker | "+ Створити персонажа" → name → it is immediately selected in the block and appears in the Characters section | 4, 10 |
+| E5 | Choice | `+ Варіант` in the draft or under a block → several lines → `(+)` from each → reorder by dragging | 6 |
+| E6 | Insert between blocks | `(+)` in the middle of a link → a new block between two, the old link continued | 5 |
+| E7 | Convergence | Drag from an output onto an existing block, and via the menu → both links are ordinary lines into one block; a back link to a block higher up the branch (a cycle) is drawn dashed and can be disconnected | 8 |
+| E8 | End of story | `■` on an output → red disappears, the issue counter goes down | 3, 12 |
+| E9 | Undo/redo | A series of actions → Ctrl/Cmd+Z reverts each → Shift+Ctrl/Cmd+Z redoes | 0 |
+| E10 | Deleting a block | Delete a block → "Undo" toast → links turn red → "Undo" restores everything | 9 |
+| E11 | Copying | Copy a branch → paste into this and another scene → new IDs, a separate branch | 9 |
+| E12 | Deleting a character | Confirmation → their blocks remain, without a character and red | 10 |
+| E13 | Scenes | Create, rename, reorder, description above the canvas, delete a non-empty one with confirmation | 11 |
+| E14 | Issues | Issues panel → a click goes to the block → "Export" is disabled while there are errors; warnings do not block it | 12 |
+| E15 | Autosave | Changes → app restart → everything is in place, the last project and scene are open | 15 |
+| E16 | Projects | Create a second project, switch, rename, duplicate, delete, edit lore | 15 |
+| E17 | Export and import | Export to a file (dialog substituted) → the file passes the schema → import creates a new project with the same content | 15 |
+| E18 | File versions | A project with a newer version → "update the app" message, file unchanged. An older version → migration and backup | 15 |
+| E19 | Agent creates | MCP `add_tree` → blocks appear on the canvas with the agent highlight | 14 |
+| E20 | Agent deletes | `delete_blocks` → approval panel with highlighted blocks → "Reject" gives `rejected`; retry → "Approve" gives `approved`; no answer — `timeout` | 14 |
+| E21 | Agent and human at once | The human edits a block's text, the agent changes the same block → the agent's change applies after editing ends, nothing is lost | 14 |
+| E22 | Undoing an agent action | The agent added blocks → the human presses Ctrl/Cmd+Z → the agent's changes are undone | 14 |
+| E23 | Canvas | Zoom, fit all, manual block placement and auto layout | 1, 8a |
 
-## 6. Діагностика падінь
+## 6. Diagnosing failures
 
-- При падінні тесту зберігаються **трейс Playwright** (кожен крок зі знімком DOM), **скріншот** і **відео** вікна. Трейс відкривається командою `pnpm exec playwright show-trace`.
-- Логи головного процесу пишуться у файл у тимчасовій теці тесту і прикладаються до звіту.
-- **Знімки екрана для порівняння** (`toHaveScreenshot`) робимо лише для кількох ключових станів полотна (блок, вибір, проблеми, підсвітка агента). Знімки зберігаються окремо для кожної ОС, бо шрифти відрізняються.
+- When a test fails, a **Playwright trace** (every step with a DOM snapshot), a **screenshot** and a **video** of the window are saved. Open the trace with `pnpm exec playwright show-trace`.
+- Main-process logs go to a file in the test's temp folder and are attached to the report.
+- **Comparison screenshots** (`toHaveScreenshot`) are taken only for a few key canvas states (block, choice, issues, agent highlight). Screenshots are stored per OS, because fonts differ.
 
-## 7. Коли що запускається
+## 7. When what runs
 
-| Тести | Коли | Команда |
+| Tests | When | Command |
 |---|---|---|
-| Юніт та інтеграційні MCP | **Після кожної змістовної зміни коду**: після правки логіки, перед тим як вважати задачу готовою. Не потрібні після правок лише документації чи текстів | `pnpm test` |
-| E2E | **Лише на запит**: коли зроблено кілька фіч і треба переконатися, що нічого не зламалося (регресійний прогін), або перед релізом | `pnpm e2e` |
+| Unit and MCP integration | **After every meaningful code change**: after changing logic, before considering a task done. Not needed after docs- or text-only changes | `pnpm test` |
+| E2E | **On request only**: when several features are done and you need to make sure nothing broke (a regression run), or before a release | `pnpm e2e` |
 
-- `pnpm test` ніколи не запускає E2E. Юніт-тести мають лишатися швидкими (секунди), щоб їх було не шкода ганяти постійно.
-- E2E повільні (хвилини, вікна на екрані), тому їх не запускають автоматично після змін.
-- Окремий E2E-сценарій можна прогнати під час роботи над фічею, щоб налагодити саме її: `pnpm e2e -g "E5"`. Повний прогін — лише на запит.
+- `pnpm test` never runs E2E. Unit tests must stay fast (seconds), so they can be run all the time.
+- E2E is slow (minutes, windows on screen), so it does not run automatically after changes.
+- A single E2E scenario can be run while working on a feature to debug it: `pnpm e2e -g "E5"`. The full run happens only on request.
 
 ```bash
-pnpm test            # юніт та інтеграційні MCP
-pnpm e2e             # збирає застосунок і проганяє всі E2E
-pnpm e2e -g "E5"     # один сценарій
-pnpm e2e --ui        # інтерактивний режим Playwright: видно кожен крок
+pnpm test            # unit and MCP integration
+pnpm e2e             # builds the app and runs all E2E
+pnpm e2e -g "E5"     # one scenario
+pnpm e2e --ui        # Playwright interactive mode: every step is visible
 ```
 
-- Локально вікна застосунку з'являються на екрані: можна дивитися, як тест клікає. Для фонового запуску є `VN_E2E_HIDDEN=1`: вікно не показується, але повністю рендериться.
-- **CI** (коли з'явиться репозиторій на GitHub): юніт-тести на кожен push; E2E — вручну (`workflow_dispatch`) з матрицею macOS / Windows / Linux, на Linux через `xvfb`. Звіти й трейси завантажуються як артефакти.
+- Locally the app windows appear on screen: you can watch the test click. For background runs there is `VN_E2E_HIDDEN=1`: the window is not shown but fully renders.
+- **CI:** releases run typecheck and unit tests (`.github/workflows/release.yml`). E2E in CI — manual (`workflow_dispatch`) with a macOS / Windows / Linux matrix, on Linux via `xvfb`; reports and traces uploaded as artifacts.
 
-## 8. Правило розробки
+## 8. Development rule
 
-- Кожна нова фіча інтерфейсу приходить разом зі своїм E2E-сценарієм з розділу 5. Сценарій пишеться й налагоджується разом із фічею, але повний E2E-прогін запускається лише на запит.
-- Задача вважається готовою, коли проходять юніт- та MCP-тести.
-- Інфраструктуру E2E (розділи 3–4) додаємо тоді, коли в інтерфейсі вже є що перевіряти: створення блоків, вибір, зв'язки. Каркас застосунку її не містить.
+- Every new UI feature comes with its E2E scenario from section 5. The scenario is written and debugged together with the feature, but the full E2E run happens only on request.
+- A task is done when unit and MCP tests pass.
+- Tests use realistic dialogue text (the «Ранок» scene: Татко, ГГ, Бен), not placeholders.

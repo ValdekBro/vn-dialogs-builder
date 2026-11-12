@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** Формат сховища (SCHEMA.md, розділи 2–3). */
+/** Storage format (SCHEMA.md, sections 2–3). */
 
 export const PROJECT_FORMAT = "vn-dialogs-builder.project";
 export const PROJECT_VERSION = 4;
@@ -15,7 +15,7 @@ export const BlockId = id("blk");
 export const LineId = id("ln");
 
 /**
- * Куди веде репліка: блок цієї сцени, свідомий кінець або перехід на початок іншої сцени.
+ * Where a line leads: a block of this scene, a deliberate end, or a jump to the start of another scene.
  */
 export const NextTarget = z.discriminatedUnion("type", [
   z.object({ type: z.literal("block"), blockId: BlockId }),
@@ -35,27 +35,27 @@ export const Character = z.object({
   builtIn: z.literal("author").optional(),
 });
 
-/** Репліка: текст і власний вихід. */
+/** A line: text and its own output. */
 export const Line = z.object({
   id: LineId,
   text: z.string(),
   next: Next,
 });
 
-/** Точка на полотні. */
+/** A point on the canvas. */
 export const Position = z.object({ x: z.number().finite(), y: z.number().finite() });
 
 /**
- * Блок — репліки одного персонажа. Одна репліка — звичайний крок діалогу;
- * кілька — вибір: гравець обирає одну з них, і кожна веде далі своїм шляхом.
+ * A block is one character's lines. One line is an ordinary dialogue step;
+ * several are a choice: the player picks one, and each continues along its own path.
  */
 export const Block = z.object({
   id: BlockId,
   characterId: CharacterId.nullable(),
   lines: z.array(Line).min(1),
   /**
-   * Позиція на полотні, якщо користувач переставив блок вручну. Без неї блок
-   * розкладається автоматично. На логіку діалогу не впливає й не експортується.
+   * Canvas position if the user moved the block manually. Without it the block
+   * is laid out automatically. Does not affect dialogue logic and is not exported.
    */
   pos: Position.optional(),
 });
@@ -68,7 +68,7 @@ export const Scene = z.object({
   blocks: z.record(BlockId, Block),
 });
 
-/** Схема без інваріантів. Для повної перевірки — `Project` з `./project.ts`. */
+/** Schema without invariants. For full validation use `Project` from `./project.ts`. */
 export const ProjectShape = z.object({
   format: z.literal(PROJECT_FORMAT),
   version: z.literal(PROJECT_VERSION),
@@ -97,8 +97,8 @@ export type Scene = z.infer<typeof Scene>;
 export type Project = z.infer<typeof ProjectShape>;
 
 /**
- * Вихід — це репліка блоку: `{ blockId, lineId }`.
- * `lineId` можна не вказувати, якщо в блоці одна репліка.
+ * An output is a block's line: `{ blockId, lineId }`.
+ * `lineId` may be omitted if the block has one line.
  */
 export type Output = { blockId: BlockId; lineId?: LineId };
 export const Output = z.object({ blockId: BlockId, lineId: LineId.optional() });

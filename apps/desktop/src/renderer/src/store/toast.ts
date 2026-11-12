@@ -19,7 +19,7 @@ export function showToast(text: string, tone: Toast["tone"] = "info", ms = 4000,
   setTimeout(() => dismissToast(id), ms);
 }
 
-/** Обгортка для дій з інтерфейсу: помилку показує тостом, а не губить у консолі. */
+/** Wrapper for UI actions: shows an error as a toast instead of losing it in the console. */
 export async function attempt<T>(fn: () => Promise<T>): Promise<T | undefined> {
   try {
     return await fn();

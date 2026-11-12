@@ -5,11 +5,11 @@ import { t } from "../strings/uk";
 import { cancelDraft, focusBlock } from "./canvas-store";
 import type { Draft, LineOutput } from "./projection";
 
-/** Дії полотна: тонкі обгортки над командами ядра з тостами, фокусом і скиданням стану полотна. */
+/** Canvas actions: thin wrappers over core commands with toasts, focus and canvas state reset. */
 
 export type DraftInput = {
   characterId: CharacterId | null;
-  /** Тексти реплік; кілька — це вибір. */
+  /** Line texts; several make a choice. */
   lines: string[];
 };
 
@@ -30,7 +30,7 @@ export async function removeBlocks(blockIds: BlockId[]) {
   if (blockIds.length === 0) return;
   const ok = await attempt(() => execute("deleteBlocks", { blockIds }));
   if (ok === undefined) return;
-  // Людина видаляє без підтвердження, але з можливістю скасувати (FLOWS.md, 9).
+  // The human deletes without confirmation, but can undo (FLOWS.md, 9).
   showToast(t.canvas.deleted(blockIds.length), "info", 6000, {
     label: t.canvas.undo,
     run: () => void attempt(() => call("session.undo")),
@@ -39,7 +39,7 @@ export async function removeBlocks(blockIds: BlockId[]) {
 
 export type Move = { blockId: BlockId; pos: { x: number; y: number } | null };
 
-/** Ручне розташування блоків (FLOWS.md, 8a). `pos: null` — назад в авторозкладку. */
+/** Manual block placement (FLOWS.md, 8a). `pos: null` returns to auto layout. */
 export function moveBlocks(moves: Move[]) {
   if (moves.length === 0) return;
   return attempt(() => execute("moveBlocks", { moves }));

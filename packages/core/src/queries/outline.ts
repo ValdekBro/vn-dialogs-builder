@@ -3,8 +3,8 @@ import type { BlockId, Next, Project, SceneId } from "../schema/entities";
 import { getScene, reachableBlocks } from "./index";
 
 /**
- * Текстове дерево сцени для агентів (MCP.md, розділ 6).
- * Блок зі сходженням розгортається один раз, далі на нього стоїть посилання `↪`.
+ * Text tree of a scene for agents (MCP.md, section 6).
+ * A block with convergence is expanded once; after that it is referenced with `↪`.
  */
 export function sceneOutline(project: Project, sceneId: SceneId): string {
   const scene = getScene(project, sceneId);
@@ -48,7 +48,7 @@ export function sceneOutline(project: Project, sceneId: SceneId): string {
         current = terminal(block.lines[0]!.next, indent);
         continue;
       }
-      // Кілька реплік — вибір: кожна зі своїм id, бо саме на неї посилаються зв'язки.
+      // Several lines are a choice: each with its own id, because links point at the line.
       lines.push(`${pad(indent)}[${block.id}] ${who}, вибір:`);
       for (const line of block.lines) {
         lines.push(`${pad(indent + 2)}◇ [${line.id}] «${oneLine(line.text)}»`);

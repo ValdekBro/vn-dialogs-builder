@@ -7,7 +7,7 @@ import { registerTools, SERVER_INSTRUCTIONS, type ToolContext } from "./tools";
 
 export const MCP_SERVER_NAME = "vnami";
 
-/** Готова команда підключення для Claude Code (MCP.md, 2). */
+/** Ready-made connect command for Claude Code (MCP.md, 2). */
 export function connectCommand(url: string, token: string): string {
   return `claude mcp add --transport http ${MCP_SERVER_NAME} ${url} --header "Authorization: Bearer ${token}"`;
 }
@@ -15,9 +15,9 @@ export function connectCommand(url: string, token: string): string {
 type Options = ToolContext & { version: string; onStatus?: (info: McpInfo) => void };
 
 /**
- * MCP-сервер застосунку (MCP.md, 2): Streamable HTTP на `127.0.0.1:<port>/mcp`,
- * доступ за токеном у заголовку `Authorization: Bearer`. Без сесій: кожен запит —
- * новий екземпляр сервера над тим самим ProjectStore, тож стан живе лише в застосунку.
+ * The app's MCP server (MCP.md, 2): Streamable HTTP on `127.0.0.1:<port>/mcp`,
+ * access by token in the `Authorization: Bearer` header. Stateless: every request gets
+ * a new server instance over the same ProjectStore, so state lives only in the app.
  */
 export class McpHttpServer {
   #options: Options;
@@ -50,7 +50,7 @@ export class McpHttpServer {
     try {
       await new Promise<void>((resolve, reject) => {
         http.once("error", reject);
-        // Лише локально: ззовні комп'ютера сервер недоступний (ARCHITECTURE.md, 6).
+        // Local only: the server is not reachable from outside the computer (ARCHITECTURE.md, 6).
         http.listen(port, "127.0.0.1", () => {
           http.off("error", reject);
           resolve();
@@ -77,14 +77,14 @@ export class McpHttpServer {
   async #handle(req: IncomingMessage, res: ServerResponse) {
     const path = (req.url ?? "").split("?")[0];
     if (path !== "/mcp") return send(res, 404, { error: "Not found. The MCP endpoint is /mcp" });
-    // Захист від DNS rebinding: приймаємо лише локальні Host.
+    // DNS rebinding protection: accept only local Host headers.
     const host = (req.headers.host ?? "").replace(/:\d+$/, "");
     if (!["127.0.0.1", "localhost", "[::1]"].includes(host)) return send(res, 403, { error: "Forbidden host" });
     if (!this.#authorized(req.headers.authorization)) {
       return send(res, 401, { code: "UNAUTHORIZED", message: "Missing or wrong token. Copy the connect command from VNami." });
     }
     if (req.method !== "POST") {
-      // Без сесій немає потоку подій сервера (GET) і завершення сесії (DELETE).
+      // Stateless means no server event stream (GET) and no session termination (DELETE).
       return send(res, 405, { error: "Method not allowed" }, { Allow: "POST" });
     }
     const server = new McpServer({ name: MCP_SERVER_NAME, version: this.#options.version }, { instructions: SERVER_INSTRUCTIONS });

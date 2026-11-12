@@ -6,7 +6,7 @@ import { openAgentDialog, useAgent } from "../store/agent-store";
 import { t } from "../strings/uk";
 import { Tip } from "./Tip";
 
-/** «Підключити AI-агента» (OVERVIEW.md, 5.8): адреса, токен, готові команди й стан сервера. */
+/** "Connect an AI agent" (OVERVIEW.md, 5.8): URL, token, ready-made commands and server state. */
 export function AgentDialog() {
   const open = useAgent((s) => s.dialogOpen);
   const mcp = useAgent((s) => s.mcp);
@@ -92,8 +92,8 @@ export function AgentDialog() {
 }
 
 /**
- * Застосунок Claude для комп'ютера (MCP.md, 2): він не підключається до HTTP-сервера напряму,
- * тож кнопка записує в його конфіг міст VNami. Після цього Claude треба перезапустити.
+ * The Claude desktop app (MCP.md, 2): it does not connect to the HTTP server directly,
+ * so the button writes the VNami bridge into its config. Claude must be restarted afterwards.
  */
 function ClaudeDesktop() {
   const [status, setStatus] = useState<ClaudeDesktopStatus | null>(null);
@@ -162,7 +162,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-/** Код з кнопкою «Скопіювати»: копіюється повний текст, навіть якщо токен на екрані прихований. */
+/** Code with a "Copy" button: the full text is copied even if the token is hidden on screen. */
 function CodeBox({ text, shown, testId, sans }: { text: string; shown: string; testId?: string; sans?: boolean }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {

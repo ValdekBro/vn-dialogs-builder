@@ -1,13 +1,13 @@
 import { randomId } from "../../../ids";
 
 /**
- * v1 → v2: блок більше не має типів `line` / `choice`. Тепер блок — це список реплік,
- * кожна зі своїм виходом; кілька реплік означає вибір.
+ * v1 → v2: a block no longer has `line` / `choice` types. A block is now a list of lines,
+ * each with its own output; several lines mean a choice.
  *
- * - `line`-блок стає блоком з однією реплікою (той самий текст і `next`);
- * - варіанти `choice`-блоку стають репліками;
- * - текст самого `choice`-блоку («питання» перед варіантами) не губиться: він стає окремим блоком
- *   того ж персонажа перед вибором, і всі зв'язки, що вели у вибір, ведуть тепер у нього.
+ * - a `line` block becomes a block with one line (same text and `next`);
+ * - the options of a `choice` block become lines;
+ * - the text of the `choice` block itself (the "question" before the options) is not lost: it becomes a separate block
+ *   of the same character before the choice, and every link that led into the choice now leads into it.
  */
 type Raw = Record<string, any>;
 
@@ -17,7 +17,7 @@ export function migrateV1toV2(project: Raw): Raw {
   const scenes: Raw = {};
   for (const [sceneId, scene] of Object.entries<Raw>(project.scenes ?? {})) {
     const blocks: Raw = {};
-    /** Куди перенаправити зв'язки: id choice-блоку → id нового блоку з його текстом. */
+    /** Where to redirect links: choice block id → id of the new block with its text. */
     const redirect = new Map<string, string>();
 
     for (const [blockId, block] of Object.entries<Raw>(scene.blocks ?? {})) {
@@ -48,7 +48,7 @@ export function migrateV1toV2(project: Raw): Raw {
       for (const block of Object.values<Raw>(blocks)) {
         for (const line of block.lines as Raw[]) {
           const target = line.next?.type === "block" ? redirect.get(line.next.blockId) : undefined;
-          // Зв'язок усередині пари «питання → вибір» не чіпаємо.
+          // The link inside the "question → choice" pair is left alone.
           if (target && target !== block.id) line.next = { type: "block", blockId: target };
         }
       }

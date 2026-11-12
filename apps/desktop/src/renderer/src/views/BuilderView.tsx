@@ -10,8 +10,8 @@ import { attempt } from "../store/toast";
 import { t } from "../strings/uk";
 
 /**
- * Білдер діалогів: лише сцени та полотно. Персонажі й інформація про проєкт — в окремих розділах,
- * щоб не займати місце біля полотна.
+ * The dialogue builder: only scenes and the canvas. Characters and project info are separate sections,
+ * so they do not take space next to the canvas.
  */
 export function BuilderView({ project }: { project: Project }) {
   return (
@@ -89,7 +89,7 @@ function ScenesPanel({ project }: { project: Project }) {
   );
 }
 
-/** Полотно сцени з назвою й описом зверху (FLOWS.md, 11). */
+/** Scene canvas with the name and description on top (FLOWS.md, 11). */
 function SceneView({ project }: { project: Project }) {
   const sceneId = useApp((s) => s.sceneId);
   const scene = sceneId ? project.scenes[sceneId] : undefined;
@@ -124,7 +124,7 @@ function SceneView({ project }: { project: Project }) {
   );
 }
 
-/** Кількість помилок у сцені (червоним) або блоків (сірим). */
+/** Number of errors in the scene (red) or of blocks (grey). */
 function SceneBadge({ scene }: { scene: Project["scenes"][string] }) {
   const project = useApp((s) => s.project)!;
   const errors = useMemo(() => sceneIssues(scene, project).filter((i) => i.severity === "error").length, [scene, project]);

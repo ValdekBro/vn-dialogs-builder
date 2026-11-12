@@ -3,8 +3,8 @@ import { IPC, type ApiMethod, type ApiMethods, type ApiResult, type SessionEvent
 import type { VnBridge } from "./api";
 
 /**
- * Вузький безпечний API для вікна (ARCHITECTURE.md, розділ 6).
- * Вікно не має доступу ні до Node, ні до ipcRenderer напряму — лише до цих двох функцій.
+ * A narrow safe API for the window (ARCHITECTURE.md, section 6).
+ * The window has no access to Node or ipcRenderer directly — only to these two functions.
  */
 const bridge: VnBridge = {
   async invoke<M extends ApiMethod>(method: M, ...args: ApiMethods[M][0]): Promise<ApiResult<ApiMethods[M][1]>> {

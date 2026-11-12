@@ -10,7 +10,7 @@ import {
 } from "./entities";
 import { findInvariantViolations } from "./invariants";
 
-/** Повна схема файлу проєкту: форма + інваріанти. */
+/** Full project file schema: shape + invariants. */
 export const Project = ProjectShape.superRefine((project, ctx) => {
   for (const v of findInvariantViolations(project)) {
     ctx.addIssue({ code: "custom", path: v.path, message: v.message });
@@ -23,7 +23,7 @@ export const AUTHOR_NAME = "Автор";
 export const AUTHOR_COLOR = "#888888";
 export const DEFAULT_SCENE_NAME = "Сцена 1";
 
-/** Палітра для автоматичного вибору кольору нового персонажа. */
+/** Palette for automatically picking a new character's colour. */
 export const CHARACTER_PALETTE = [
   "#e5487a",
   "#3b82f6",
@@ -45,7 +45,7 @@ export type CreateProjectArgs = {
 };
 
 /**
- * Новий проєкт: лише назва, плюс «Автор» і порожня «Сцена 1» (FLOWS.md, розділ 15).
+ * A new project: just a name, plus "Автор" (Author) and an empty "Сцена 1" (Scene 1) (FLOWS.md, section 15).
  */
 export function createProject({ name, description = "", appVersion, newId = randomId }: CreateProjectArgs): ProjectT {
   const author: Character = {
@@ -83,5 +83,5 @@ export function getAuthor(project: ProjectT): Character {
   return author;
 }
 
-/** Тип проєкту під тим самим ім'ям, що й схема: `Project` — і значення, і тип. */
+/** Project type under the same name as the schema: `Project` is both a value and a type. */
 export type Project = ProjectT;

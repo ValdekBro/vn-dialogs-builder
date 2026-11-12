@@ -12,18 +12,18 @@ import { McpHttpServer } from "./mcp/http";
 import { bridgeEntry, claudeDesktopConfigPath } from "./mcp/claude-desktop";
 
 app.setName("VNami");
-// Інтерфейс лише в темній темі: системні елементи (меню, діалоги, скролбари) теж темні.
+// The UI is dark-only: system elements (menus, dialogs, scrollbars) are dark too.
 nativeTheme.themeSource = "dark";
 
-// Тека даних можна підмінити змінною середовища (окрема тека для тестів і експериментів).
+// The data folder can be overridden with an environment variable (a separate folder for tests and experiments).
 const userDataOverride = process.env.VN_USER_DATA_DIR;
 if (userDataOverride) app.setPath("userData", userDataOverride);
 else migrateLegacyDataDir();
 
 /**
- * Застосунок раніше називався «VN Dialogs Builder». Його проєкти докопіюємо в теку VNami,
- * якщо їх там ще немає. Нічого не перезаписуємо й не видаляємо: стара тека лишається як резервна.
- * (Перейменувати теку цілком не можна: Electron створює нову теку ще до запуску нашого коду.)
+ * The app used to be called "VN Dialogs Builder". Its projects are copied into the VNami folder
+ * if they are not there yet. Nothing is overwritten or deleted: the old folder stays as a backup.
+ * (The folder cannot simply be renamed: Electron creates the new folder before our code runs.)
  */
 function migrateLegacyDataDir() {
   const legacyProjects = join(app.getPath("appData"), "VN Dialogs Builder", "projects");
@@ -65,7 +65,7 @@ function createWindow(): BrowserWindow {
     },
   });
   win.on("ready-to-show", () => win.show());
-  // Зовнішні посилання відкриваються в браузері, а не у вікні застосунку.
+  // External links open in the browser, not in the app window.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url);
     return { action: "deny" };
@@ -94,20 +94,20 @@ async function bootstrap() {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(IPC.event, event);
   };
   const updater = new Updater({
-    // Перед встановленням дозберігаємо проєкт; далі вихід уже нічого не чекає.
+    // Before installing, flush the project; after that quitting waits for nothing.
     beforeInstall: async () => {
       quitting = true;
       await projectStore.dispose();
     },
     onState: (update) => send({ type: "update", update }),
   });
-  // MCP (MCP.md): агент працює з відкритим проєктом; видалення — лише після схвалення людиною.
+  // MCP (MCP.md): the agent works on the open project; deletions only after human approval.
   approvals = new Approvals({
     enabled: () => settings.value.confirmAgentDeletes,
     timeoutSec: () => settings.value.approvalTimeoutSec,
     onShow: (request) => {
       send({ type: "approval", request });
-      // Запит має побачити людина, навіть якщо вікно згорнуте.
+      // The human must see the request even if the window is minimized.
       if (request && mainWindow && !mainWindow.isDestroyed()) {
         if (mainWindow.isMinimized()) mainWindow.restore();
         mainWindow.show();
@@ -124,11 +124,11 @@ async function bootstrap() {
   });
   await mcp.start(settings.value.mcp.port, settings.value.mcp.token);
   if (mcp.info.error) console.error("MCP server:", mcp.info.error);
-  // Міст для застосунку Claude: скрипт лежить поза app.asar (asarUnpack в electron-builder.yml),
-  // бо його запускає інший процес — VNami в режимі Node.
+  // Bridge for the Claude app: the script lives outside app.asar (asarUnpack in electron-builder.yml),
+  // because another process runs it — VNami in Node mode.
   const bridgeScript = join(__dirname, "mcp-bridge.js").replace(/app\.asar([\\/])/, "app.asar.unpacked$1");
   const claude = {
-    // VN_CLAUDE_CONFIG — лише для тестів, щоб не чіпати справжній конфіг Claude.
+    // VN_CLAUDE_CONFIG — tests only, so the real Claude config is never touched.
     configPath: process.env.VN_CLAUDE_CONFIG ?? claudeDesktopConfigPath(process.platform, app.getPath("home"), app.getPath("appData")),
     entry: bridgeEntry(process.execPath, bridgeScript, join(dataDir, "settings.json")),
   };
@@ -155,7 +155,7 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-// Перед виходом дозберігаємо проєкт: autosave міг ще не встигнути.
+// Flush the project before quitting: autosave may not have run yet.
 app.on("before-quit", (event) => {
   if (quitting || !store) return;
   event.preventDefault();

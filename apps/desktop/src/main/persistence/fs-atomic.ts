@@ -2,8 +2,8 @@ import { randomBytes } from "node:crypto";
 import { open, rename, rm } from "node:fs/promises";
 
 /**
- * Атомарний запис: спершу тимчасовий файл поруч, потім перейменування.
- * Якщо процес впаде посеред запису, старий файл лишиться цілим.
+ * Atomic write: first a temporary file next to it, then a rename.
+ * If the process dies mid-write, the old file stays intact.
  */
 export async function writeFileAtomic(path: string, data: string): Promise<void> {
   const tmp = `${path}.${process.pid}.${randomBytes(4).toString("hex")}.tmp`;

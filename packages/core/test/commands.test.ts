@@ -173,7 +173,7 @@ describe("addBlock", () => {
       "INVALID_ARGUMENT",
     );
     expect(run({ characterId: "chr_zzzzzzzzzz" })).toBe("NOT_FOUND");
-    expect(run({ from: { blockId: ids.answer } })).toBe("INVALID_ARGUMENT"); // кілька реплік, а lineId не вказано
+    expect(run({ from: { blockId: ids.answer } })).toBe("INVALID_ARGUMENT"); // several lines and no lineId
     expect(run({ lines: [{ text: TEXT.well, next: { type: "block", blockId: "blk_zzzzzzzzzz" } }] })).toBe("NOT_FOUND");
     const { sceneId: other } = editor.run(createScene, { name: "Біля криниці" });
     expect(run({ sceneId: other, from: { blockId: ids.knock } })).toBe("CROSS_SCENE");
@@ -204,7 +204,7 @@ describe("updateBlock", () => {
     const b = block(editor.project, ids.answer);
     expect(b.lines.map((l) => l.text)).toEqual(["Дякую, Бене, але я сама.", tease]);
     expect(b.lines[0]!.id).toBe(decline!.id);
-    expect(b.lines[0]!.next).toEqual({ type: "block", blockId: ids.well }); // next не передано — лишився
+    expect(b.lines[0]!.next).toEqual({ type: "block", blockId: ids.well }); // next not passed — kept
     expect(b.lines[1]!.next).toEqual({ type: "end" });
   });
 
@@ -393,7 +393,7 @@ describe("scene transitions", () => {
     expect(line(editor.project, ids.well).next).toEqual({ type: "scene", sceneId: well });
 
     const { projectIssues, sceneOutline } = await import("../src");
-    // Порожня цільова сцена — помилка: переходити нікуди.
+    // An empty target scene is an error: the jump leads nowhere.
     expect(projectIssues(editor.project).map((i) => [i.code, i.message])).toEqual([
       ["empty_target_scene", "Сцена «Біля криниці» ще порожня або без стартового блоку"],
     ]);

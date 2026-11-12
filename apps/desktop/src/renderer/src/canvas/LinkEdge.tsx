@@ -16,8 +16,8 @@ const STROKE: Record<ProjEdge["kind"], { color: string; dash?: string }> = {
 };
 
 /**
- * Зв'язок. При наведенні на зв'язок між блоками посередині з'являються
- * `(+)` — вставити блок між ними — і `×` — відключити (FLOWS.md, 5, 8).
+ * A link. Hovering a link between blocks shows, in the middle,
+ * `(+)` — insert a block between them — and `×` — disconnect (FLOWS.md, 5, 8).
  */
 export function LinkEdge(props: EdgeProps) {
   const data = props.data as EdgeData;
@@ -34,7 +34,7 @@ export function LinkEdge(props: EdgeProps) {
         style={{
           stroke: hovered && interactive ? "#a1a1aa" : style.color,
           strokeWidth: 1.5,
-          // Зв'язок назад іде поверх блоків — пунктир, щоб не плутати з блоками під ним.
+          // A back link runs over the blocks — dashed, so it is not confused with the blocks beneath.
           strokeDasharray: data.back ? "6 4" : style.dash,
         }}
         interactionWidth={interactive ? 20 : 0}

@@ -1,56 +1,56 @@
 # VNami — MCP Specification
 
-> Специфікація MCP-сервера, вбудованого в застосунок. Модель даних описано в [SCHEMA.md](SCHEMA.md), архітектуру — в [ARCHITECTURE.md](ARCHITECTURE.md).
+> Specification of the MCP server built into the app. The data model is described in [SCHEMA.md](SCHEMA.md), the architecture in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## 1. Загальні принципи
+## 1. General principles
 
-1. **Активний проєкт.** Застосунок зберігає багато проєктів, але MCP працює з тим, що **зараз відкритий** у застосунку, тому `projectId` в інструментах немає. Перелік усіх проєктів агент може прочитати (`list_projects`), а перемикає проєкти лише людина. Якщо проєкт не відкрито, виклики, крім `list_projects`, повертають помилку `NO_PROJECT_OPEN`.
-2. **Глобальні ID.** ID блоків і реплік унікальні в межах проєкту, тож для операцій над ними `sceneId` не потрібен.
-3. **Один виклик дорівнює одній команді й одному кроку undo.** Пакетні інструменти (`add_chain`, `add_tree`) атомарні: виконується все або нічого, і все це один крок undo.
-4. **Зміни агента позначаються** як `source: "agent"`. Застосунок може коротко підсвітити змінені блоки на полотні й показати в історії, хто зробив зміну.
-5. **Персонажа можна вказати за ID або за точним ім'ям.** Параметр `character` приймає `chr_…` або ім'я. Якщо ім'я не знайдено або воно неоднозначне, повертається помилка `INVALID_ARGUMENT` зі списком кандидатів.
-6. **Відповіді.** Кожен інструмент повертає `structuredContent` (JSON) і короткий текстовий дубль у `content` для клієнтів без підтримки структурованих відповідей.
-7. **Інструменти, що змінюють модель,** повертають змінені сутності та поточну кількість проблем: `{ ..., issues: { errors: n, warnings: m } }`. Так агент одразу бачить, чи не залишив за собою «червоних» місць.
-8. **Видалення потребує підтвердження людини.** Будь-яка дія агента, що видаляє контент (блоки, репліки, персонажів, сцени), спершу показує запит у застосунку й виконується лише після схвалення. Механізм описано в розділі 5.9.
+1. **Active project.** The app stores many projects, but MCP works with the one **currently open** in the app, so tools have no `projectId`. The agent can read the list of all projects (`list_projects`), but only the human switches projects. If no project is open, every call except `list_projects` returns `NO_PROJECT_OPEN`.
+2. **Global IDs.** Block and line IDs are unique within the project, so operations on them do not need a `sceneId`.
+3. **One call equals one command and one undo step.** Batch tools (`add_chain`, `add_tree`) are atomic: all or nothing, and all of it is one undo step.
+4. **Agent changes are marked** as `source: "agent"`. The app can briefly highlight changed blocks on the canvas and show in history who made the change.
+5. **A character can be given by ID or by exact name.** The `character` parameter accepts `chr_…` or a name. If the name is not found or is ambiguous, `INVALID_ARGUMENT` is returned with a list of candidates.
+6. **Responses.** Every tool returns `structuredContent` (JSON) and a short text copy in `content` for clients without structured-output support.
+7. **Tools that change the model** return the changed entities and the current issue count: `{ ..., issues: { errors: n, warnings: m } }`. This way the agent immediately sees whether it left any "red" spots behind.
+8. **Deletion needs human approval.** Any agent action that deletes content (blocks, lines, characters, scenes) first shows a request in the app and runs only after approval. The mechanism is described in section 5.9.
 
-## 1a. Що агент може робити (чек-ліст вимог)
+## 1a. What the agent can do (requirements checklist)
 
-| Вимога | Інструменти |
+| Requirement | Tools |
 |---|---|
-| Список усіх персонажів | `list_characters` |
-| Окремий персонаж з усіма деталями | `get_character` |
-| Список сцен | `list_scenes` |
-| Структура й контент усієї сцени | `get_scene` (`outline` для читання, `json` для точної структури) |
-| Додавати нові блоки | `add_block`, `add_chain`, `add_tree` |
-| Повністю редагувати наявні блоки | `update_block` (персонаж, повний список реплік з їхніми `next`) + точкові `add_line` / `update_line` / `reorder_lines` / `set_next` |
-| Видаляти блоки за підтвердженням людини | `delete_blocks` → запит у застосунку → `approved` / `rejected` / `timeout` |
+| List of all characters | `list_characters` |
+| A single character with all details | `get_character` |
+| List of scenes | `list_scenes` |
+| Structure and content of a whole scene | `get_scene` (`outline` for reading, `json` for the exact structure) |
+| Add new blocks | `add_block`, `add_chain`, `add_tree` |
+| Fully edit existing blocks | `update_block` (character, full list of lines with their `next`) + targeted `add_line` / `update_line` / `reorder_lines` / `set_next` |
+| Delete blocks with human approval | `delete_blocks` → request in the app → `approved` / `rejected` / `timeout` |
 
-## 2. Підключення
+## 2. Connecting
 
-- Адреса: `http://127.0.0.1:<port>/mcp`, транспорт Streamable HTTP.
-- Порт за замовчуванням `47821`, його можна змінити в налаштуваннях.
-- Авторизація через заголовок `Authorization: Bearer <token>`. Токен генерує застосунок, а показує його в налаштуваннях разом із готовою командою підключення:
+- URL: `http://127.0.0.1:<port>/mcp`, Streamable HTTP transport.
+- Default port `47821`; it can be changed in settings.
+- Authorization via the `Authorization: Bearer <token>` header. The app generates the token and shows it in the "Connect an AI agent" dialog together with a ready-made connect command:
 
 ```bash
 claude mcp add --transport http vnami http://127.0.0.1:47821/mcp --header "Authorization: Bearer <token>"
 ```
 
-- MCP доступний лише поки застосунок запущений.
-- Сервер без сесій (stateless): кожен POST на `/mcp` обробляється окремо, відповіді — JSON (`enableJsonResponse`). Тож «підключеність» агента застосунок визначає за останнім викликом (2 хв).
-- Приймаються лише запити з `Host` 127.0.0.1 / localhost (захист від DNS rebinding).
-- Код: `apps/desktop/src/main/mcp/` — `http.ts` (сервер і токен), `tools.ts` (інструменти й інструкції), `approvals.ts` (черга підтверджень), `bridge.ts` і `claude-desktop.ts` (міст для застосунку Claude).
+- MCP is available only while the app is running.
+- The server is stateless: every POST to `/mcp` is handled separately, responses are JSON (`enableJsonResponse`). So the app judges whether an agent is "connected" by its last call (2 min).
+- Only requests with `Host` 127.0.0.1 / localhost are accepted (DNS rebinding protection).
+- Code: `apps/desktop/src/main/mcp/` — `http.ts` (server and token), `tools.ts` (tools and instructions), `approvals.ts` (approval queue), `bridge.ts` and `claude-desktop.ts` (bridge for the Claude app).
 
-### 2a. Застосунок Claude (не Claude Code)
+### 2a. The Claude app (not Claude Code)
 
-Застосунок Claude для комп'ютера підключає з `claude_desktop_config.json` лише локальні stdio-сервери, а HTTP-адресу з токеном не приймає. Конектори в налаштуваннях Claude і claude.ai працюють із серверів Anthropic і до `127.0.0.1` не дістають — для них підключення неможливе.
+The Claude desktop app only loads local stdio servers from `claude_desktop_config.json`; it does not accept an HTTP URL with a token. Connectors in Claude's settings and claude.ai run on Anthropic's servers and cannot reach `127.0.0.1`, so connecting them is impossible.
 
-Тому VNami має **міст stdio ↔ HTTP** (`bridge.ts`, збирається окремим файлом `out/main/mcp-bridge.js`, у пакеті — поза `app.asar` через `asarUnpack`):
+That is why VNami has a **stdio ↔ HTTP bridge** (`bridge.ts`, built as a separate file `out/main/mcp-bridge.js`; in the package it lives outside `app.asar` via `asarUnpack`):
 
 ```json
 {
   "mcpServers": {
     "vnami": {
-      "command": "<шлях до виконуваного файлу VNami>",
+      "command": "<path to the VNami executable>",
       "args": ["<…>/app.asar.unpacked/out/main/mcp-bridge.js", "<userData>/settings.json"],
       "env": { "ELECTRON_RUN_AS_NODE": "1" }
     }
@@ -58,33 +58,33 @@ claude mcp add --transport http vnami http://127.0.0.1:47821/mcp --header "Autho
 }
 ```
 
-- Claude запускає сам виконуваний файл VNami в режимі Node, тож Node.js у користувача не потрібен.
-- Кожне JSON-RPC повідомлення зі stdin міст пересилає POST-ом на `/mcp`, відповідь пише в stdout. Порт і токен він щоразу читає з `settings.json`, тож токена в конфігу Claude немає.
-- VNami закрита — запит отримує помилку `-32000` «VNami is not running…», а не зависає; неправильний токен — окрема зрозуміла помилка.
-- Кнопка «Підключити до Claude» в діалозі «Підключити AI-агента» дописує запис `vnami` у конфіг Claude (macOS: `~/Library/Application Support/Claude/`, Windows: `%APPDATA%\Claude\`), не чіпаючи решту. Пошкоджений JSON не перезаписується — показується помилка. Після цього Claude треба повністю перезапустити.
-- Якщо VNami перенесли в іншу папку (наприклад, запустили з `.dmg`, а потім скопіювали в «Програми»), шлях у конфігу застаріє — натисніть кнопку ще раз.
-- Для тестів шлях до конфігу Claude можна підмінити змінною `VN_CLAUDE_CONFIG`.
+- Claude runs the VNami executable itself in Node mode, so the user does not need Node.js.
+- The bridge forwards every JSON-RPC message from stdin as a POST to `/mcp` and writes the reply to stdout. It reads the port and token from `settings.json` every time, so Claude's config holds no token.
+- If VNami is closed, the request gets error `-32000` "VNami is not running…" instead of hanging; a wrong token is a separate, clear error.
+- The "Підключити до Claude" (Connect to Claude) button in the "Connect an AI agent" dialog writes the `vnami` entry into Claude's config (macOS: `~/Library/Application Support/Claude/`, Windows: `%APPDATA%\Claude\`) and leaves the rest untouched. Broken JSON is never overwritten — an error is shown instead. Claude must then be fully restarted.
+- If VNami is moved to another folder (e.g. launched from the `.dmg` and later copied into Applications), the path in the config goes stale — press the button again.
+- For tests, the Claude config path can be overridden with the `VN_CLAUDE_CONFIG` environment variable.
 
-## 3. Інструкції сервера
+## 3. Server instructions
 
-Поле `instructions` під час ініціалізації коротко пояснює агенту модель, щоб він не мусив її вгадувати:
+The `instructions` field sent at initialization briefly explains the model to the agent, so it does not have to guess:
 
-> Проєкт складається з персонажів і сцен і має опис лору: прочитайте його через `get_project`, перш ніж писати контент. Сцена — це граф блоків. Блок — це персонаж і його репліки (`lines`), у кожної репліки свій вихід `next`. Одна репліка — звичайний крок діалогу; кілька — вибір гравця. `next` буває таким: `null` (не підключено, це проблема), перехід до блоку цієї сцени, `end` (свідомий кінець історії) або `scene` (перехід на початок іншої сцени). Розгалуження можливе лише через кілька реплік у блоці. Кілька виходів можуть вести в один блок (сходження). Щоб прочитати сцену, використовуйте `get_scene` з `format: "outline"`. Щоб створити лінійний діалог, використовуйте `add_chain`, а для розгалуженої гілки — `add_tree`. Після змін перевіряйте `list_issues`. Видалення виконується лише після підтвердження людини в застосунку: якщо результат `rejected`, не повторюйте спробу без нового запиту від людини. Персонаж «Автор» є завжди. Враховуйте `description` і `speechStyle` персонажів, коли пишете їхні репліки.
+> The project consists of characters and scenes and has a lore description: read it with `get_project` before writing content. A scene is a graph of blocks. A block is one character and their lines (`lines`); every line has its own output `next`. One line is an ordinary dialogue step; several are a player choice. `next` is: `null` (not connected, an issue), a block of the same scene, `end` (a deliberate end of the story) or `scene` (jump to the start of another scene). Branching is only possible via several lines in a block. Several outputs may lead into one block (convergence). To read a scene use `get_scene` with `format: "outline"`. To create a linear dialogue use `add_chain`, for a branching part use `add_tree`. Check `list_issues` after changes. Deletions run only after a human approves them in the app: if the result is `rejected`, do not retry without a new request from the user. The "Автор" (Author) character always exists. Respect characters' `description` and `speechStyle` when writing their lines.
 
-## 4. Спільні типи
+## 4. Shared types
 
 ```ts
 type Output = { blockId: BlockId; lineId?: LineId };
-// вихід — це репліка: { blockId, lineId }
-// lineId можна не вказувати, якщо в блоці одна репліка
+// an output is a line: { blockId, lineId }
+// lineId may be omitted if the block has one line
 
 type Next =
   | null
-  | { type: "block"; blockId: BlockId }   // блок тієї ж сцени
-  | { type: "end" }                       // кінець історії
-  | { type: "scene"; sceneId: SceneId };  // перехід на початок іншої сцени
+  | { type: "block"; blockId: BlockId }   // a block of the same scene
+  | { type: "end" }                       // end of the story
+  | { type: "scene"; sceneId: SceneId };  // jump to the start of another scene
 
-type CharacterRef = string; // "chr_…" або точне ім'я
+type CharacterRef = string; // "chr_…" or exact name
 
 type Issue = {
   code: "missing_start" | "unreachable" | "dangling_output" | "missing_character" | "empty_text"
@@ -93,131 +93,131 @@ type Issue = {
   sceneId: SceneId;
   blockId?: BlockId;
   lineId?: LineId;
-  message: string; // людський опис українською
+  message: string; // human-readable description in the UI language (Ukrainian)
 };
 ```
 
-## 5. Інструменти
+## 5. Tools
 
-### 5.1 Читання
+### 5.1 Reading
 
-| Інструмент | Вхід | Вихід |
+| Tool | Input | Output |
 |---|---|---|
 | `list_projects` | — | `{ id, name, isActive, sceneCount }[]` |
-| `get_project` | — | `{ id, name, description (лор), characters: Character[], scenes: { id, name, description, blockCount, issueCount }[] }` |
-| `list_characters` | — | `Character[]` у порядку `characterOrder` |
+| `get_project` | — | `{ id, name, description (lore), characters: Character[], scenes: { id, name, description, blockCount, issueCount }[] }` |
+| `list_characters` | — | `Character[]` in `characterOrder` |
 | `get_character` | `{ character }` | `Character` + `{ blockCount }` |
-| `list_scenes` | — | `{ id, name, description, startBlockId, blockCount, issueCount }[]` у порядку `sceneOrder` |
-| `get_scene` | `{ sceneId, format?: "outline" \| "json" }` | `outline`: текстове дерево (див. 6); `json`: `Scene` за схемою |
+| `list_scenes` | — | `{ id, name, description, startBlockId, blockCount, issueCount }[]` in `sceneOrder` |
+| `get_scene` | `{ sceneId, format?: "outline" \| "json" }` | `outline`: text tree (see 6); `json`: `Scene` per the schema |
 | `get_block` | `{ blockId }` | `Block` + `{ sceneId, incoming: Output[], isStart }` |
-| `find_blocks` | `{ query?, character?, sceneId?, choicesOnly?, limit? = 50 }` | `{ sceneId, block }[]`. `query` шукає підрядок без урахування регістру в тексті реплік; `choicesOnly` — лише блоки з кількома репліками |
+| `find_blocks` | `{ query?, character?, sceneId?, choicesOnly?, limit? = 50 }` | `{ sceneId, block }[]`. `query` is a case-insensitive substring search in line text; `choicesOnly` — only blocks with several lines |
 | `list_issues` | `{ sceneId? }` | `Issue[]` |
 
-### 5.1a Проєкт
+### 5.1a Project
 
-| Інструмент | Вхід | Вихід |
+| Tool | Input | Output |
 |---|---|---|
-| `update_project` | `{ name?, description? }` | `{ id, name, description }`. Змінює назву й опис лору активного проєкту |
+| `update_project` | `{ name?, description? }` | `{ id, name, description }`. Changes the active project's name and lore description |
 
-Створення, видалення та перемикання проєктів доступні лише людині.
+Creating, deleting and switching projects is available only to the human.
 
-### 5.2 Персонажі
+### 5.2 Characters
 
-| Інструмент | Вхід | Вихід |
+| Tool | Input | Output |
 |---|---|---|
-| `create_character` | `{ name, color?, description?, speechStyle? }` | `Character`. Якщо колір не вказано, він підбирається автоматично з палітри |
+| `create_character` | `{ name, color?, description?, speechStyle? }` | `Character`. If no colour is given, one is picked automatically from the palette |
 | `update_character` | `{ character, name?, color?, description?, speechStyle? }` | `Character` |
-| `delete_character` | `{ character, reason? }` | **Потребує підтвердження** (5.9). Після схвалення: `{ status, deletedId, affectedBlockIds }`. Видалити «Автора» не можна: помилка `FORBIDDEN` |
+| `delete_character` | `{ character, reason? }` | **Needs approval** (5.9). After approval: `{ status, deletedId, affectedBlockIds }`. "Автор" cannot be deleted: `FORBIDDEN` |
 
-### 5.3 Сцени
+### 5.3 Scenes
 
-| Інструмент | Вхід | Вихід |
+| Tool | Input | Output |
 |---|---|---|
-| `create_scene` | `{ name, description? }` | `Scene` (порожня) |
-| `update_scene` | `{ sceneId, name?, description?, startBlockId? }` | `Scene` (без блоків) |
-| `delete_scene` | `{ sceneId, reason? }` | **Потребує підтвердження** (5.9). Після схвалення: `{ status, deletedId }` |
-| `duplicate_scene` | `{ sceneId, name? }` | `Scene` з новими ID |
+| `create_scene` | `{ name, description? }` | `Scene` (empty) |
+| `update_scene` | `{ sceneId, name?, description?, startBlockId? }` | `Scene` (without blocks) |
+| `delete_scene` | `{ sceneId, reason? }` | **Needs approval** (5.9). After approval: `{ status, deletedId }` |
+| `duplicate_scene` | `{ sceneId, name? }` | `Scene` with new IDs |
 
-### 5.4 Блоки
+### 5.4 Blocks
 
-| Інструмент | Вхід | Вихід |
+| Tool | Input | Output |
 |---|---|---|
-| `add_block` | `{ sceneId, character, text?, lines?: { text, next? }[], from?: Output, insert?: boolean, next?: Next }` | `Block`. Одна репліка — `text` (+ `next`), кілька (вибір) — `lines` |
-| `update_block` | `{ blockId, character?, lines? }` | `Block` (див. нижче) |
-| `delete_blocks` | `{ blockIds: BlockId[], reason? }` | **Потребує підтвердження** (5.9). Після схвалення: `{ status, deletedIds, danglingOutputs: Output[] }` |
+| `add_block` | `{ sceneId, character, text?, lines?: { text, next? }[], from?: Output, insert?: boolean, next?: Next }` | `Block`. One line — `text` (+ `next`); several (a choice) — `lines` |
+| `update_block` | `{ blockId, character?, lines? }` | `Block` (see below) |
+| `delete_blocks` | `{ blockIds: BlockId[], reason? }` | **Needs approval** (5.9). After approval: `{ status, deletedIds, danglingOutputs: Output[] }` |
 
-**Поведінка `add_block`:**
-- `from` задає вихід, до якого підключити новий блок.
-- `insert: true` вставляє блок **між** `from` і його попереднім `next`: старе продовження отримує перша репліка нового блоку. Без `insert` старий зв'язок виходу просто замінюється.
-- Якщо в сцені ще немає стартового блоку, новий блок стає стартовим.
+**`add_block` behaviour:**
+- `from` is the output to connect the new block to.
+- `insert: true` inserts the block **between** `from` and its previous `next`: the old continuation goes to the new block's first line. Without `insert` the output's old link is simply replaced.
+- If the scene has no start block yet, the new block becomes the start block.
 
-**`update_block` — повне редагування блоку одним викликом.** Змінюються лише передані поля:
-- `character` — персонаж блоку.
-- `lines` — **повний** новий список реплік: `{ id?: LineId, text: string, next?: Next }[]`, мінімум одна.
-  - Елемент з `id` оновлює наявну репліку. Якщо `next` не передано, зв'язок лишається як був.
-  - Елемент без `id` створює нову репліку. Так звичайний блок стає вибором.
-  - Порядок масиву стає новим порядком реплік.
-  - Наявні репліки, яких немає в масиві, видаляються. Це видалення контенту, тож **потрібне підтвердження** (5.9).
+**`update_block` — full block edit in one call.** Only the given fields change:
+- `character` — the block's character.
+- `lines` — the **full** new list of lines: `{ id?: LineId, text: string, next?: Next }[]`, at least one.
+  - An element with `id` updates an existing line. If `next` is not given, the link stays as it was.
+  - An element without `id` creates a new line. This is how an ordinary block becomes a choice.
+  - The array order becomes the new line order.
+  - Existing lines missing from the array are deleted. That is a content deletion, so **approval is needed** (5.9).
 
-Усе виконується атомарно і є одним кроком undo.
+Everything runs atomically and is one undo step.
 
-**`delete_blocks`** видаляє один або кілька блоків з одним запитом на підтвердження. Видалити блок можна лише так: окремого `delete_block` без підтвердження немає.
+**`delete_blocks`** deletes one or more blocks with a single approval request. This is the only way to delete a block: there is no separate `delete_block` without approval.
 
-### 5.5 Репліки
+### 5.5 Lines
 
-| Інструмент | Вхід | Вихід |
+| Tool | Input | Output |
 |---|---|---|
-| `add_line` | `{ blockId, text, index?, next?: Next }` | `Block`. Друга й наступні репліки роблять блок вибором |
+| `add_line` | `{ blockId, text, index?, next?: Next }` | `Block`. The second and later lines turn the block into a choice |
 | `update_line` | `{ lineId, text }` | `Block` |
-| `delete_line` | `{ lineId, reason? }` | **Потребує підтвердження** (5.9). Після схвалення: `{ status, block }`. Останню репліку блоку видалити не можна (`INVALID_ARGUMENT`): видаліть блок |
-| `reorder_lines` | `{ blockId, lineIds: LineId[] }` | `Block`. `lineIds` має бути перестановкою наявних ID |
+| `delete_line` | `{ lineId, reason? }` | **Needs approval** (5.9). After approval: `{ status, block }`. The block's last line cannot be deleted (`INVALID_ARGUMENT`): delete the block |
+| `reorder_lines` | `{ blockId, lineIds: LineId[] }` | `Block`. `lineIds` must be a permutation of the existing IDs |
 
-### 5.6 Зв'язки
+### 5.6 Links
 
-| Інструмент | Вхід | Вихід |
+| Tool | Input | Output |
 |---|---|---|
-| `set_next` | `{ from: Output, next: Next }` | Оновлений `Block` |
+| `set_next` | `{ from: Output, next: Next }` | The updated `Block` |
 
-Цей один інструмент покриває всі операції зі зв'язками: підключити (`{type:"block"}`), відключити (`null`) і позначити кінець сцени (`{type:"end"}`). Цільовий блок має належати до тієї ж сцени.
+This single tool covers every link operation: connect (`{type:"block"}`), disconnect (`null`), mark the end of the story (`{type:"end"}`) and jump to another scene (`{type:"scene"}`). A target block must belong to the same scene.
 
-### 5.7 Пакетні
+### 5.7 Batch
 
-#### `add_chain` — лінійний діалог
+#### `add_chain` — linear dialogue
 
 ```ts
 {
   sceneId: SceneId;
-  from?: Output;          // куди підключити перший блок; без from ланцюжок «висить» окремо
-  insert?: boolean;       // вставити між from і його старим next
-  lines: { character: CharacterRef; text: string }[]; // мінімум 1
-  end?: Next;             // next останнього блоку; за замовчуванням null
+  from?: Output;          // where to connect the first block; without from the chain stands alone
+  insert?: boolean;       // insert between from and its old next
+  lines: { character: CharacterRef; text: string }[]; // at least 1
+  end?: Next;             // next of the last block; null by default
 }
 // → { blockIds: BlockId[], issues }
 ```
 
-#### `add_tree` — розгалужена гілка
+#### `add_tree` — branching part
 
-Структура вкладена, бо агентам так найприродніше описувати діалог. Мітки (`label`) дозволяють сходження всередині одного виклику.
+The structure is nested, because that is the most natural way for agents to describe dialogue. Labels (`label`) allow convergence within one call.
 
 ```ts
 type TreeNode = {
-  label?: string;              // локальна мітка для посилань у межах виклику
+  label?: string;              // local label for references within the call
   character: CharacterRef;
-  text?: string;               // одна репліка…
-  next?: TreeTarget;           // …і її продовження
-  lines?: {                    // або кілька реплік — вибір
+  text?: string;               // one line…
+  next?: TreeTarget;           // …and its continuation
+  lines?: {                    // or several lines — a choice
     text: string;
     next?: TreeTarget;
   }[];
 };
 
 type TreeTarget =
-  | TreeNode                       // новий блок
-  | { ref: string }                // мітка блоку з цього ж виклику (сходження)
-  | { blockId: BlockId }           // наявний блок сцени
-  | { end: true }                  // кінець історії
-  | { scene: SceneId }             // перехід на початок іншої сцени
-  | null;                          // не підключено
+  | TreeNode                       // a new block
+  | { ref: string }                // label of a block from the same call (convergence)
+  | { blockId: BlockId }           // an existing block of the scene
+  | { end: true }                  // end of the story
+  | { scene: SceneId }             // jump to the start of another scene
+  | null;                          // not connected
 
 {
   sceneId: SceneId;
@@ -228,11 +228,11 @@ type TreeTarget =
 // → { blockIds: Record<label | "#<n>", BlockId>, rootBlockId, issues }
 ```
 
-- Вузол має або `text` (+ `next`), або `lines`, але не обидва.
-- Посилання `ref` може вести на будь-яку мітку виклику, зокрема оголошену нижче.
-- Невідома мітка або дубль мітки дає помилку `INVALID_ARGUMENT`, і нічого не створюється.
+- A node has either `text` (+ `next`) or `lines`, not both.
+- A `ref` may point to any label of the call, including one declared further down.
+- An unknown or duplicate label gives `INVALID_ARGUMENT`, and nothing is created.
 
-**Приклад** (сцена з SCHEMA.md, створена одним викликом):
+**Example** (the scene from SCHEMA.md, created in one call; dialogue content is Ukrainian):
 
 ```json
 {
@@ -260,41 +260,41 @@ type TreeTarget =
 }
 ```
 
-### 5.8 Історія
+### 5.8 History
 
-| Інструмент | Вхід | Вихід |
+| Tool | Input | Output |
 |---|---|---|
-| `undo` | — | `{ undone: string \| null }`: опис скасованої дії |
+| `undo` | — | `{ undone: string \| null }`: description of the undone action |
 | `redo` | — | `{ redone: string \| null }` |
 
-Історія спільна для людини й агента. `undo` скасовує останню дію, хоч би хто її зробив. Це прийнятно, бо на практиці одночасно працює хтось один.
+History is shared by the human and the agent. `undo` reverts the last action, whoever made it. That is acceptable, because in practice only one of them works at a time.
 
-`undo` і `redo` підтвердження не потребують, бо самі є відкатом і їх можна повернути.
+`undo` and `redo` need no approval: they are reverts themselves and can be reversed.
 
-### 5.9 Підтвердження видалень
+### 5.9 Deletion approval
 
-Дії агента, що видаляють контент, не виконуються одразу. Це стосується:
+Agent actions that delete content do not run immediately. This applies to:
 - `delete_blocks`, `delete_line`, `delete_character`, `delete_scene`;
-- `update_block`, що прибирає наявні репліки.
+- `update_block` that removes existing lines.
 
-**Як це працює:**
-1. Застосунок показує людині запит: що саме агент хоче видалити (блоки підсвічуються на полотні), які зв'язки після цього зникнуть, і `reason` від агента, якщо він його передав.
-2. Людина натискає **«Підтвердити»** або **«Відхилити»**.
-3. Виклик інструмента **чекає на відповідь** до 120 секунд (значення налаштовується) і повертає:
-   - `{ status: "approved", ... }` — дію виконано, результат як описано в інструменті;
-   - `{ status: "rejected" }` — нічого не змінено;
-   - `{ status: "timeout" }` — людина не відповіла вчасно, запит знято, нічого не змінено.
-4. Поки запит очікує, інші запити на видалення стають у чергу.
+**How it works:**
+1. The app shows the human a request: what exactly the agent wants to delete (blocks are highlighted on the canvas), which links disappear as a result, and the agent's `reason` if it gave one.
+2. The human presses **"Підтвердити"** (Approve) or **"Відхилити"** (Reject).
+3. The tool call **waits for the answer** up to 120 seconds (configurable) and returns:
+   - `{ status: "approved", ... }` — the action ran, with the result described for the tool;
+   - `{ status: "rejected" }` — nothing changed;
+   - `{ status: "timeout" }` — the human did not answer in time, the request was withdrawn, nothing changed.
+4. While a request is pending, other deletion requests queue up.
 
-`rejected` і `timeout` — це звичайні результати, а не помилки (`isError: false`). Агент має повідомити користувача і не повторювати спробу автоматично.
+`rejected` and `timeout` are ordinary results, not errors (`isError: false`). The agent should tell the user and not retry automatically.
 
-Підтвердження можна вимкнути в налаштуваннях застосунку («Підтверджувати видалення агентом»). За замовчуванням воно ввімкнене.
+Approval can be turned off in the app settings ("Confirm agent deletions"). It is on by default.
 
-> Деякі MCP-клієнти мають короткий таймаут на виклик інструмента. Якщо 120 секунд перевищують таймаут клієнта, його треба збільшити в налаштуваннях клієнта (наприклад, `MCP_TOOL_TIMEOUT` у Claude Code).
+> Some MCP clients have a short tool-call timeout. If 120 seconds exceeds the client's timeout, raise it in the client's settings (e.g. `MCP_TOOL_TIMEOUT` in Claude Code).
 
-## 6. Формат `outline`
+## 6. The `outline` format
 
-Компактне текстове представлення сцени, економне за токенами й зручне для читання агентом. Блок, у який веде кілька зв'язків, розгортається лише один раз, а далі на нього стоїть посилання `↪`.
+A compact text representation of a scene, token-efficient and easy for an agent to read. A block that several links lead into is expanded only once; after that it is referenced with `↪`. The labels are in Ukrainian, like the rest of the content:
 
 ```
 Сцена «Ранок» (scn_Qw8rT2yUiO), старт: blk_a1a1a1a1a1, проблем: 0
@@ -309,35 +309,37 @@ type TreeTarget =
     ↪ blk_d4d4d4d4d4
 ```
 
-Позначки:
-- `◇` — репліка-варіант у блоці з кількома репліками (вибір). Блок з однією реплікою пишеться в один рядок;
+Markers:
+- `Сцена … старт … проблем` — header: scene name and id, start block, issue count; `Опис` — the scene description;
+- `вибір` — a block with several lines (a choice); each option is marked `◇`. A block with one line is written on one line;
 - `■ КІНЕЦЬ` — `next: end`;
-- `→ СЦЕНА «Назва» (scn_…)` — перехід на початок іншої сцени;
+- `→ СЦЕНА «Name» (scn_…)` — jump to the start of another scene;
 - `⚠ НЕ ПІДКЛЮЧЕНО` — `next: null`;
-- `↪` — посилання на вже показаний блок.
+- `↪` — reference to a block already shown;
+- `(без персонажа)` — block without a character; `(порожня сцена)` — empty scene.
 
-Недосяжні блоки виводяться наприкінці в розділі `Недосяжні:`.
+Unreachable blocks are listed at the end under `Недосяжні:`.
 
-## 7. Помилки
+## 7. Errors
 
-Помилки повертаються з `isError: true` і структурою `{ code, message, details? }`.
+Errors are returned with `isError: true` and the structure `{ code, message, details? }`.
 
-| Код | Коли |
+| Code | When |
 |---|---|
-| `NO_PROJECT_OPEN` | У застосунку не відкрито проєкт |
-| `NOT_FOUND` | Сутність із таким ID або ім'ям не існує |
-| `INVALID_ARGUMENT` | Невалідні аргументи: схема, неоднозначне ім'я, вихід без `lineId` у блоці з кількома репліками, видалення останньої репліки, невідома мітка тощо |
-| `CROSS_SCENE` | Зв'язок між блоками різних сцен |
-| `FORBIDDEN` | Заборонена дія, наприклад видалення «Автора» |
-| `UNAUTHORIZED` | Відсутній або хибний токен |
+| `NO_PROJECT_OPEN` | No project is open in the app |
+| `NOT_FOUND` | No entity with that ID or name |
+| `INVALID_ARGUMENT` | Invalid arguments: schema, ambiguous name, output without `lineId` in a block with several lines, deleting the last line, unknown label, etc. |
+| `CROSS_SCENE` | A link between blocks of different scenes |
+| `FORBIDDEN` | A forbidden action, e.g. deleting "Автор" |
+| `UNAUTHORIZED` | Missing or wrong token |
 
-Повідомлення (`message`) пишуться **англійською**, бо агенти розуміють її найкраще. Тексти проблем (`Issue.message`) пишуться українською, бо їх бачить і людина в UI.
+Messages (`message`) are in **English**, because agents understand it best. Issue texts (`Issue.message`) are in Ukrainian, because the human sees them in the UI too.
 
-## 8. Поза MVP
+## 8. Beyond the MVP
 
-- MCP-ресурси (`vn://scene/{id}`) і підписки на зміни.
-- Перемикання та створення проєктів агентом.
-- Інструмент експорту.
-- MCP-промпти: наприклад, «напиши гілку в стилі персонажа».
-- `copy_blocks` між сценами. Поки що агент відтворює потрібне через `add_tree`.
-- Інструменти для блоків-дій, змінних і переходів між сценами, коли вони з'являться в схемі.
+- MCP resources (`vn://scene/{id}`) and change subscriptions.
+- Switching and creating projects by the agent.
+- An export tool.
+- MCP prompts: e.g. "write a branch in a character's style".
+- `copy_blocks` between scenes. For now the agent recreates what it needs with `add_tree`.
+- Tools for action blocks and variables once they appear in the schema.

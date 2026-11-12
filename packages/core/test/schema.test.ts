@@ -33,7 +33,7 @@ describe("project schema", () => {
     const text = serializeProject(project);
     expect(text.endsWith("}\n")).toBe(true);
     expect(parseProjectFile(text).project).toEqual(project);
-    // Перестановка ключів не змінює результат серіалізації.
+    // Reordering keys does not change the serialization result.
     const shuffled = JSON.parse(text);
     const reversedScenes = Object.fromEntries(Object.entries(shuffled.scenes).reverse());
     expect(serializeProject({ ...project, scenes: reversedScenes as typeof project.scenes })).toBe(text);
@@ -121,7 +121,7 @@ describe("project loading and migrations", () => {
     expect(scene.blocks.blk_a1a1a1a1a1!.lines).toEqual([
       { id: "ln_a1a1a1a1a1", text: "[Бен — мисливець]", next: { type: "block", blockId: expect.stringMatching(/^blk_/) } },
     ]);
-    // Питання Олі стало окремим блоком перед вибором, а варіанти — репліками блоку вибору.
+    // Оля's question became a separate block before the choice, and the options became lines of the choice block.
     const promptId = (scene.blocks.blk_a1a1a1a1a1!.lines[0]!.next as { blockId: string }).blockId;
     expect(promptId).not.toBe("blk_b2b2b2b2b2");
     expect(scene.blocks[promptId]).toMatchObject({

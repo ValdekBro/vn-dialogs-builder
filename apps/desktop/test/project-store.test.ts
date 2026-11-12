@@ -49,7 +49,7 @@ describe("ProjectRepository", () => {
     const text = await readFile(repo.pathOf(p.id), "utf8");
     expect(text.endsWith("}\n")).toBe(true);
     expect(parseProjectFile(text).project.appVersion).toBe("9.9.9");
-    // Тимчасових файлів після атомарного запису не лишається.
+    // No temporary files are left after an atomic write.
     expect((await readdir(repo.dir)).filter((f) => f.endsWith(".tmp"))).toEqual([]);
   });
 

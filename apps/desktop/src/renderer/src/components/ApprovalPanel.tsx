@@ -6,8 +6,8 @@ import { t } from "../strings/uk";
 import { useNow } from "./AgentButton";
 
 /**
- * Запит агента на видалення (FLOWS.md, 14; MCP.md, 5.9): панель поверх полотна, що не блокує роботу.
- * Що видаляється, причина, таймер і «Підтвердити» / «Відхилити». Блоки підсвічуються на полотні.
+ * An agent deletion request (FLOWS.md, 14; MCP.md, 5.9): a panel over the canvas that does not block work.
+ * What is deleted, the reason, a timer and "Approve" / "Reject". Blocks are highlighted on the canvas.
  */
 export function ApprovalPanel() {
   const req = useAgent((s) => s.approval);

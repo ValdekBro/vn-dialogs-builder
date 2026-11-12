@@ -11,7 +11,7 @@ export type CreateCharacterArgs = {
   speechStyle?: string;
 };
 
-/** Перший колір палітри, якого ще немає в проєкті; якщо всі зайняті — по колу. */
+/** The first palette colour not yet used in the project; if all are taken, wrap around. */
 export function pickCharacterColor(project: Project): string {
   const used = new Set(Object.values(project.characters).map((c) => c.color.toLowerCase()));
   const free = CHARACTER_PALETTE.find((c) => !used.has(c));
@@ -58,7 +58,7 @@ export const updateCharacter = defineCommand({
 
 export type DeleteCharacterArgs = { characterId: CharacterId };
 
-/** Блоки персонажа не зникають: їхній `characterId` стає `null` і вони підсвічуються як проблема. */
+/** The character's blocks stay: their `characterId` becomes `null` and they are flagged as an issue. */
 export const deleteCharacter = defineCommand({
   name: "deleteCharacter",
   label: () => "Видалити персонажа",

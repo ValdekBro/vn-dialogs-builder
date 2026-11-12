@@ -2,7 +2,7 @@ import * as core from "@vn/core";
 import type { Command } from "@vn/core";
 import { ALLOWED_COMMANDS, type CommandName } from "../../shared/api";
 
-/** Реєстр команд ядра за назвою: вікно (а пізніше MCP) викликає їх лише через цей білий список. */
+/** Registry of core commands by name: the window (and MCP) call them only through this allowlist. */
 export const COMMANDS: Record<CommandName, Command<any, unknown>> = Object.fromEntries(
   ALLOWED_COMMANDS.map((name) => {
     const cmd = (core as unknown as Record<string, Command<any, unknown>>)[name];

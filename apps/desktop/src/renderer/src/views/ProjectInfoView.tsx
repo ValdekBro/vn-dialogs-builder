@@ -6,7 +6,7 @@ import { attempt } from "../store/toast";
 import { t } from "../strings/uk";
 import { Field } from "./CharactersView";
 
-/** Розділ «Про проєкт»: назва, лор і коротка статистика (FLOWS.md, 15). */
+/** The "About project" section: name, lore and short stats (FLOWS.md, 15). */
 export function ProjectInfoView({ project }: { project: Project }) {
   const stats = useMemo(() => {
     const blocks = Object.values(project.scenes).reduce((n, s) => n + Object.keys(s.blocks).length, 0);

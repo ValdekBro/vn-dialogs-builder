@@ -5,26 +5,26 @@ import { writeFileAtomic } from "../persistence/fs-atomic";
 import { MCP_SERVER_NAME } from "./http";
 
 /**
- * Підключення до застосунку Claude для комп'ютера (MCP.md, 2). Він запускає лише локальні
- * stdio-сервери, тож у його конфіг записуємо міст (src/main/mcp/bridge.ts): сам виконуваний
- * файл VNami в режимі Node. Інші записи конфігу не чіпаємо.
+ * Connecting to the Claude desktop app (MCP.md, 2). It only launches local
+ * stdio servers, so we write the bridge into its config (src/main/mcp/bridge.ts): the VNami
+ * executable itself in Node mode. Other config entries are left alone.
  */
 
 export type StdioEntry = { command: string; args: string[]; env: Record<string, string> };
 
-/** Де Claude тримає конфіг: macOS і Windows (на Linux застосунку Claude немає). */
+/** Where Claude keeps its config: macOS and Windows (there is no Claude app on Linux). */
 export function claudeDesktopConfigPath(platform: NodeJS.Platform, home: string, appData: string): string | null {
   if (platform === "darwin") return join(home, "Library", "Application Support", "Claude", "claude_desktop_config.json");
   if (platform === "win32") return join(appData, "Claude", "claude_desktop_config.json");
   return null;
 }
 
-/** Запис `vnami` для конфігу: виконуваний файл VNami як Node + скрипт мосту + шлях до налаштувань. */
+/** The `vnami` config entry: the VNami executable as Node + the bridge script + the settings path. */
 export function bridgeEntry(execPath: string, bridgeScript: string, settingsPath: string): StdioEntry {
   return { command: execPath, args: [bridgeScript, settingsPath], env: { ELECTRON_RUN_AS_NODE: "1" } };
 }
 
-/** Чи встановлений Claude і чи вже є в ньому саме цей запис. */
+/** Whether Claude is installed and already has exactly this entry. */
 export async function claudeDesktopStatus(configPath: string | null, entry: StdioEntry): Promise<ClaudeDesktopStatus> {
   if (!configPath) return { supported: false, found: false, connected: false, configPath: null, entry };
   const found = await exists(dirname(configPath));
@@ -41,8 +41,8 @@ export async function claudeDesktopStatus(configPath: string | null, entry: Stdi
 export class ClaudeConfigError extends Error {}
 
 /**
- * Додає або оновлює `mcpServers.vnami`, зберігаючи решту конфігу як є.
- * Пошкоджений конфіг не перезаписуємо: краще помилка, ніж втрачені налаштування користувача.
+ * Adds or updates `mcpServers.vnami`, keeping the rest of the config as is.
+ * A broken config is never overwritten: an error is better than losing the user's settings.
  */
 export async function installClaudeDesktop(configPath: string, entry: StdioEntry): Promise<void> {
   let config: Record<string, unknown> = {};

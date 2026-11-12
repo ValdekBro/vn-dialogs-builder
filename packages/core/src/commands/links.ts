@@ -4,7 +4,7 @@ import { defineCommand, validateNext } from "./util";
 
 export type SetNextArgs = { from: Output; next: Next };
 
-/** Підключити, відключити (`null`), позначити кінець сцени (`{ type: "end" }`) або перейти до іншої сцени (`{ type: "scene" }`). */
+/** Connect, disconnect (`null`), mark the end of the story (`{ type: "end" }`) or jump to another scene (`{ type: "scene" }`). */
 export const setNext = defineCommand({
   name: "setNext",
   label: (a: SetNextArgs) =>

@@ -4,8 +4,8 @@ import { t } from "../strings/uk";
 import { Tip } from "./Tip";
 
 /**
- * Плашка оновлення (ARCHITECTURE.md, «Оновлення»): «Доступна версія X · Що нового · Оновити».
- * Після «Оновити» — прогрес завантаження, далі застосунок сам зберігає проєкт і перезапускається.
+ * Update banner (ARCHITECTURE.md, "Updates"): "Version X available · What's new · Update".
+ * After "Update" — download progress, then the app saves the project and restarts by itself.
  */
 export function UpdateBanner() {
   const { update, dismissed, releasesUrl } = useUpdate();

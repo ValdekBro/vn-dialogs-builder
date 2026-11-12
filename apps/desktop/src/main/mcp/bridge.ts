@@ -2,13 +2,13 @@ import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 
 /**
- * Міст stdio ↔ HTTP для клієнтів, що вміють запускати лише локальні stdio-сервери
- * (застосунок Claude для комп'ютера, MCP.md, 2). Клієнт запускає сам виконуваний файл VNami
- * в режимі Node (`ELECTRON_RUN_AS_NODE=1`) з цим скриптом; міст пересилає кожне JSON-RPC
- * повідомлення з stdin на HTTP-сервер застосунку, а відповідь пише в stdout.
+ * stdio ↔ HTTP bridge for clients that can only launch local stdio servers
+ * (the Claude desktop app, MCP.md, 2). The client runs the VNami executable itself
+ * in Node mode (`ELECTRON_RUN_AS_NODE=1`) with this script; the bridge forwards every JSON-RPC
+ * message from stdin to the app's HTTP server and writes the reply to stdout.
  *
- * Порт і токен міст щоразу читає з `settings.json` застосунку, тож у конфігу клієнта
- * немає токена, а зміна порту чи токена не ламає підключення.
+ * The bridge reads the port and token from the app's `settings.json` every time, so the client
+ * config holds no token, and changing the port or token does not break the connection.
  */
 
 type Json = Record<string, unknown>;
@@ -17,7 +17,7 @@ type Endpoint = { url: string; token: string };
 export type BridgeOptions = {
   input: NodeJS.ReadableStream;
   output: NodeJS.WritableStream;
-  /** Звідки взяти адресу й токен; викликається на кожне повідомлення. */
+  /** Where to get the URL and token; called for every message. */
   endpoint: () => Endpoint;
   fetch?: typeof fetch;
 };
@@ -25,13 +25,13 @@ export type BridgeOptions = {
 export const NOT_RUNNING =
   "VNami is not running. Ask the user to open the VNami app (and a project in it), then call the tool again.";
 
-/** Адреса й токен з `settings.json` застосунку (src/main/persistence/settings.ts). */
+/** URL and token from the app's `settings.json` (src/main/persistence/settings.ts). */
 export function endpointFromSettings(path: string): Endpoint {
   const s = JSON.parse(readFileSync(path, "utf8")) as { mcp?: { port?: number; token?: string } };
   return { url: `http://127.0.0.1:${s.mcp?.port ?? 47821}/mcp`, token: s.mcp?.token ?? "" };
 }
 
-/** Запускає міст; проміс завершується, коли stdin закрився і всі відповіді надіслано. */
+/** Runs the bridge; the promise resolves once stdin is closed and every reply is sent. */
 export async function runBridge({ input, output, endpoint, fetch: doFetch = fetch }: BridgeOptions): Promise<void> {
   let protocolVersion: string | undefined;
   const pending = new Set<Promise<void>>();
@@ -39,7 +39,7 @@ export async function runBridge({ input, output, endpoint, fetch: doFetch = fetc
 
   const fail = (msg: unknown, message: string) => {
     for (const m of Array.isArray(msg) ? msg : [msg]) {
-      // Відповідь потрібна лише на запити (є id і method); на сповіщення — ні.
+      // Only requests (with id and method) need a reply; notifications do not.
       const r = m as Json | null;
       if (r && typeof r === "object" && typeof r.method === "string" && "id" in r) {
         write({ jsonrpc: "2.0", id: r.id, error: { code: -32000, message } });
@@ -70,7 +70,7 @@ export async function runBridge({ input, output, endpoint, fetch: doFetch = fetc
     } catch {
       return fail(msg, NOT_RUNNING);
     }
-    if (res.status === 202) return; // сповіщення прийнято
+    if (res.status === 202) return; // notification accepted
     const text = await res.text();
     if (res.status === 401) return fail(msg, "VNami rejected the token. Reconnect VNami in Claude from the app's «Підключити AI-агента» dialog.");
     let replies: unknown[];
@@ -95,7 +95,7 @@ export async function runBridge({ input, output, endpoint, fetch: doFetch = fetc
   const lines = createInterface({ input, crlfDelay: Infinity });
   for await (const line of lines) {
     if (!line.trim()) continue;
-    // Запити обробляються паралельно: довгий виклик (підтвердження видалення) не блокує інші.
+    // Requests are handled in parallel: a long call (deletion approval) does not block others.
     const p = forward(line).finally(() => pending.delete(p));
     pending.add(p);
   }

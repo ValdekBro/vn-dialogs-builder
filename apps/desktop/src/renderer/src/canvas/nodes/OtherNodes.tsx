@@ -25,9 +25,9 @@ const roundBtn =
   "nodrag flex h-7 w-7 items-center justify-center rounded-full border border-zinc-600 bg-zinc-800 text-zinc-300 hover:border-blue-400 hover:text-white";
 
 /**
- * Непідключений вихід (FLOWS.md, 3): `(+)` — новий блок; поруч — «Завершити»: перейти на початок
- * іншої сцени (або створити нову) чи позначити кінець історії.
- * Додаткова кнопка — частина вузла (лише невидима до наведення), тож курсор спокійно доходить до неї.
+ * A dangling output (FLOWS.md, 3): `(+)` — a new block; next to it, "Finish": jump to the start
+ * of another scene (or create a new one) or mark the end of the story.
+ * The extra button is part of the node (just invisible until hover), so the cursor reaches it easily.
  */
 export function StubNode(props: NodeProps) {
   const node = nodeOf<"stub">(props);
@@ -76,15 +76,15 @@ export function StubNode(props: NodeProps) {
 }
 
 /**
- * Меню «Завершити»: перейти на початок іншої сцени, створити нову сцену й перейти в неї,
- * або позначити кінець історії.
+ * The "Finish" menu: jump to the start of another scene, create a new scene and jump into it,
+ * or mark the end of the story.
  */
 function FinishMenu({ output, onClose }: { output: LineOutput; onClose: () => void }) {
   const { scene } = useCanvasData();
   const project = useApp((s) => s.project)!;
   const ref = useRef<HTMLDivElement>(null);
   const others = project.sceneOrder.filter((id) => id !== scene.id).map((id) => project.scenes[id]!);
-  // Блоки, з якими можна з'єднати цей вихід (будь-який блок сцени, зокрема вище по гілці).
+  // Blocks this output can be connected to (any block of the scene, including ones higher up the branch).
   const targets = linkTargets(scene, output.blockId).map((id) => scene.blocks[id]!);
 
   useEffect(() => {
@@ -179,7 +179,7 @@ function FinishMenu({ output, onClose }: { output: LineOutput; onClose: () => vo
   );
 }
 
-/** Перехід на початок іншої сцени: плашка-посилання. Клік відкриває ту сцену, × прибирає перехід. */
+/** A jump to the start of another scene: a link badge. Click opens that scene, × removes the jump. */
 export function SceneLinkNode(props: NodeProps) {
   const node = nodeOf<"scene">(props);
   const target = useApp((s) => s.project?.scenes[node.sceneId]);
@@ -212,7 +212,7 @@ export function SceneLinkNode(props: NodeProps) {
   );
 }
 
-/** Порожня сцена: велика кнопка в центрі (FLOWS.md, 4). */
+/** Empty scene: a big button in the centre (FLOWS.md, 4). */
 export function EmptyNode() {
   return (
     <button
@@ -229,14 +229,14 @@ export function EmptyNode() {
 }
 
 /**
- * Чернетка нового блоку на місці майбутнього блоку (FLOWS.md, 4):
- * спершу персонаж, потім текст репліки. Кнопка «Варіант» додає ще репліку — тоді блок стає вибором.
- * Enter зберігає, Esc скасовує.
+ * Draft of a new block in place of the future block (FLOWS.md, 4):
+ * first the character, then the line text. The "Option" button adds another line — the block becomes a choice.
+ * Enter saves, Esc cancels.
  */
 export function DraftNode(props: NodeProps) {
   const node = nodeOf<"draft">(props);
   const { scene } = useCanvasData();
-  // Вибраний персонаж: id (або проміс, поки новий персонаж створюється) та ім'я для показу одразу.
+  // The selected character: id (or a promise while a new character is being created) and the name to show right away.
   const [picked, setPicked] = useState<{ id: Promise<CharacterId | undefined>; name: string } | null>(null);
   const [lines, setLines] = useState<string[]>([""]);
   const color = useApp((s) => {

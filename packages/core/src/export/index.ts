@@ -18,20 +18,20 @@ import {
 import { Project } from "../schema/project";
 import { migrateExport } from "./migrations";
 
-/** Формат експорту (SCHEMA.md, розділ 8). Версіонується незалежно від сховища. */
+/** Export format (SCHEMA.md, section 8). Versioned independently of storage. */
 export const EXPORT_FORMAT = "vn-dialogs-builder.export";
 export const EXPORT_VERSION = 1;
 
 export const ExportNext = z.discriminatedUnion("type", [
   z.object({ type: z.literal("block"), blockId: BlockId }),
   z.object({ type: z.literal("end") }),
-  // Перехід на початок іншої сцени; та сцена гарантовано є в експорті (порожні сцени дають помилку).
+  // Jump to the start of another scene; that scene is guaranteed to be in the export (empty scenes are an error).
   z.object({ type: z.literal("scene"), sceneId: SceneId }),
 ]);
 
 export const ExportLine = z.object({ id: LineId, text: z.string().min(1), next: ExportNext });
 
-/** Блок експорту: персонаж і репліки. Кілька реплік — вибір гравця. */
+/** Export block: a character and lines. Several lines are a player choice. */
 export const ExportBlock = z.object({
   id: BlockId,
   characterId: CharacterId,
@@ -68,7 +68,7 @@ export const ExportV1 = z.object({
 export type ExportV1 = z.infer<typeof ExportV1>;
 export type ExportBlock = z.infer<typeof ExportBlock>;
 
-/** Поточна версія формату експорту. */
+/** Current export format version. */
 export const ExportFile = ExportV1;
 export type ExportFile = ExportV1;
 
@@ -91,7 +91,7 @@ export class ImportError extends Error {
 
 export type ToExportOptions = { appVersion: string; now?: Date };
 
-/** Будує файл експорту. Кидає `ExportBlockedError`, якщо в проєкті є помилки. */
+/** Builds the export file. Throws `ExportBlockedError` if the project has errors. */
 export function toExport(project: ProjectT, { appVersion, now = new Date() }: ToExportOptions): ExportFile {
   const errors = projectIssues(project).filter((i) => i.severity === "error");
   if (errors.length > 0) throw new ExportBlockedError(errors);
@@ -128,13 +128,13 @@ function exportScene(scene: Scene) {
     name: scene.name,
     description: scene.description,
     startBlockId: scene.startBlockId!,
-    // Без помилок недосяжних блоків немає, тож обхід охоплює всі блоки.
+    // With no errors there are no unreachable blocks, so the walk covers every block.
     blocks: traversalOrder(scene).map((id) => exportBlock(scene.blocks[id]!)),
   };
 }
 
 function exportBlock(b: Block): ExportBlock {
-  // null-значення тут неможливі: їх відсіяла перевірка помилок, а ExportFile.parse це підтвердить.
+  // null values are impossible here: the error check filtered them out, and ExportFile.parse confirms it.
   return {
     id: b.id,
     characterId: b.characterId!,
@@ -149,8 +149,8 @@ export function serializeExport(file: ExportFile): string {
 export type FromExportOptions = { appVersion: string; newId?: IdGenerator };
 
 /**
- * Імпорт: приймає файл експорту будь-якої підтримуваної версії й створює **новий** проєкт
- * з новим `prj_` ID. ID персонажів, сцен, блоків і варіантів зберігаються.
+ * Import: accepts an export file of any supported version and creates a **new** project
+ * with a new `prj_` ID. Character, scene, block and line IDs are kept.
  */
 export function fromExport(raw: unknown, { appVersion, newId = randomId }: FromExportOptions): ProjectT {
   const migrated = migrateExport(raw);

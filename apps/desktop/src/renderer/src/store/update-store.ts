@@ -8,9 +8,9 @@ type UpdateStore = {
   appVersion: string;
   releasesUrl: string;
   update: UpdateState;
-  /** Версія, плашку якої людина закрила: про неї більше не нагадуємо до наступного запуску. */
+  /** The version whose banner the person closed: not reminded again until the next launch. */
   dismissed: string | null;
-  /** Людина натиснула «Перевірити оновлення» й чекає на відповідь. */
+  /** The person pressed "Check for updates" and is waiting for an answer. */
   checking: boolean;
 };
 
@@ -27,7 +27,7 @@ function onEvent(event: SessionEvent) {
   const { checking } = useUpdate.getState();
   useUpdate.setState({ update: event.update });
   if (!checking) return;
-  // Відповідь на ручну перевірку: «остання версія» або помилка — тостом; нова версія — плашкою.
+  // Answer to a manual check: "latest version" or an error — as a toast; a new version — as a banner.
   if (event.update.status === "checking") return;
   useUpdate.setState({ checking: false, dismissed: null });
   if (event.update.status === "latest" || event.update.status === "idle") showToast(t.update.latest(useUpdate.getState().appVersion), "info");

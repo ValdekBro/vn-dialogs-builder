@@ -3,16 +3,16 @@ import type { IdGenerator } from "../ids";
 import { findBlock, getCharacter, resolveOutput } from "../queries";
 import { HexColor, type Next, type Output, type Project, type Scene } from "../schema/entities";
 
-/** Те, що команда отримує від виконавця, окрім самого стану. */
+/** What a command gets from the executor besides the state itself. */
 export type CommandContext = { newId: IdGenerator };
 
 /**
- * Команда змінює чернетку проєкту (Immer draft) і повертає простий результат: ID, списки ID.
- * Повертати об'єкти з чернетки не можна: після завершення команди вони стають недійсними.
+ * A command changes the project draft (Immer draft) and returns a plain result: IDs, lists of IDs.
+ * Never return objects from the draft: they become invalid once the command finishes.
  */
 export type Command<A, R> = {
   name: string;
-  /** Опис для історії та підказок undo («Скасувати: …»). */
+  /** Description for history and undo hints ("Undo: …"). */
   label: (args: A) => string;
   run: (draft: Project, args: A, ctx: CommandContext) => R;
 };
@@ -21,7 +21,7 @@ export function defineCommand<A, R>(cmd: Command<A, R>): Command<A, R> {
   return cmd;
 }
 
-/** Перевіряє, що `next` можна поставити на вихід у цій сцені. */
+/** Checks that `next` can be set on an output in this scene. */
 export function validateNext(project: Project, scene: Scene, next: Next): Next {
   if (next === null) return null;
   if (next.type === "end") return { type: "end" };
@@ -40,7 +40,7 @@ export function validateNext(project: Project, scene: Scene, next: Next): Next {
   return { type: "block", blockId: next.blockId };
 }
 
-/** Вихід `from` має належати сцені `sceneId`. Повертає й саму репліку, щоб читати й змінювати її `next`. */
+/** Output `from` must belong to scene `sceneId`. Also returns the line itself, to read and change its `next`. */
 export function resolveOutputInScene(project: Project, sceneId: string, from: Output) {
   const resolved = resolveOutput(project, from);
   if (resolved.scene.id !== sceneId) {
@@ -64,7 +64,7 @@ export function validateColor(color: string): string {
   return color.toLowerCase();
 }
 
-/** Перевіряє, що `ids` — перестановка `current`. */
+/** Checks that `ids` is a permutation of `current`. */
 export function requirePermutation(ids: string[], current: string[], what: string): void {
   const set = new Set(ids);
   if (ids.length !== current.length || set.size !== ids.length || current.some((id) => !set.has(id))) {
@@ -72,7 +72,7 @@ export function requirePermutation(ids: string[], current: string[], what: strin
   }
 }
 
-/** Обриває всі зв'язки сцени, що ведуть у видалені блоки. Повертає виходи, що стали висячими. */
+/** Clears every link in the scene that points into deleted blocks. Returns the outputs left dangling. */
 export function detachIncoming(scene: Scene, removed: Set<string>): Required<Output>[] {
   const dangling: Required<Output>[] = [];
   for (const block of Object.values(scene.blocks)) {

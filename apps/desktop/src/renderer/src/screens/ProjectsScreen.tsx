@@ -10,7 +10,7 @@ import { useApp } from "../store/app-store";
 import { attempt } from "../store/toast";
 import { t } from "../strings/uk";
 
-/** Екран «Проєкти» (FLOWS.md, розділ 15). */
+/** The "Projects" screen (FLOWS.md, section 15). */
 export function ProjectsScreen() {
   const projects = useApp((s) => s.projects);
   const [creating, setCreating] = useState(false);
@@ -53,7 +53,7 @@ export function ProjectsScreen() {
   );
 }
 
-/** Версія застосунку й ручна перевірка оновлень. */
+/** App version and manual update check. */
 function AppFooter() {
   const appVersion = useUpdate((s) => s.appVersion);
   const checking = useUpdate((s) => s.checking);
@@ -152,7 +152,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
         <span className="min-w-0 truncate">
           {t.projects.scenes(project.sceneCount)} · {t.projects.updated(project.updatedAt)}
         </span>
-        {/* Дії з'являються при наведенні. `invisible` (а не прозорість), щоб приховані кнопки не перехоплювали кліки. */}
+        {/* Actions appear on hover. `invisible` (not opacity), so hidden buttons do not catch clicks. */}
         <span className="invisible flex shrink-0 gap-0.5 group-hover:visible" onClick={(e) => e.stopPropagation()}>
           {!blocked && (
             <>

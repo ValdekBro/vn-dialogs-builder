@@ -51,12 +51,12 @@ function CanvasInner({ scene }: { scene: Scene }) {
   const issues = useMemo(() => indexIssues(sceneIssues(scene, project)), [scene, project]);
   const canvasData = useMemo(() => ({ scene, ...issues }), [scene, issues]);
 
-  // Розміри вузлів вимірює React Flow; без них розкладка неточна, тож чекаємо на всі.
+  // React Flow measures node sizes; without them the layout is inaccurate, so we wait for all of them.
   const sizes = useRef(new Map<string, Size>());
   const [sizesVersion, setSizesVersion] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const { shown, final, target, place } = useAnimatedPositions();
-  // Блоки, переставлені вручну (FLOWS.md, 8a), і ті, що тягнуть просто зараз.
+  // Blocks moved manually (FLOWS.md, 8a), and the ones being dragged right now.
   const pinned = useMemo(() => {
     const map = new Map<string, Point>();
     for (const b of Object.values(scene.blocks)) if (b.pos) map.set(b.id, b.pos);
@@ -67,13 +67,13 @@ function CanvasInner({ scene }: { scene: Scene }) {
   draggingRef.current = dragging;
   const fittedScene = useRef<string | null>(null);
 
-  // Нова сцена — нове полотно.
+  // New scene — new canvas.
   useEffect(() => {
     resetCanvas();
     setSelected(new Set());
   }, [scene.id]);
 
-  // Розкладка після кожної зміни структури або розмірів.
+  // Layout after every change of structure or sizes.
   useEffect(() => {
     const allMeasured = projection.nodes.every((n) => sizes.current.has(n.id));
     if (!allMeasured) return;
@@ -86,7 +86,7 @@ function CanvasInner({ scene }: { scene: Scene }) {
     };
   }, [projection, sizesVersion, target, pinned]);
 
-  // Перший показ сцени — вмістити все; далі — прокрутка до нового або вибраного вузла, якщо він поза екраном.
+  // First showing of a scene fits everything; after that, scroll to a new or selected node if it is off screen.
   useEffect(() => {
     if (final.size === 0) return;
     if (fittedScene.current !== scene.id && projection.nodes.every((n) => final.has(n.id))) {
@@ -110,7 +110,7 @@ function CanvasInner({ scene }: { scene: Scene }) {
     if (!visible || focus.flash) void rf.setCenter(cx, cy, { zoom: vp.zoom, duration: 300 });
   }, [final, focus, rf, scene.id, projection]);
 
-  // Під час перетягування службові вузли блоку ((+), «Кінець», перехід) їдуть разом із ним.
+  // While dragging, a block's service nodes ((+), "End", jump) move with it.
   const visible = useMemo(() => (dragging.size > 0 ? applyPinned(projection, shown, dragging) : shown), [projection, shown, dragging]);
 
   const nodes: Node[] = useMemo(
@@ -120,18 +120,18 @@ function CanvasInner({ scene }: { scene: Scene }) {
         const size = sizes.current.get(n.id);
         return {
           id: n.id,
-          // Виміряні розміри повертаємо React Flow: без них він знову ховає вузол до повторного виміру,
-          // і поле вводу на вузлі втрачає фокус.
+          // Measured sizes are handed back to React Flow: without them it hides the node again until re-measured,
+          // and the input on the node loses focus.
           measured: size,
           type: n.kind,
           data: { node: n },
           position: pos ?? { x: 0, y: 0 },
-          // Доки вузол не розкладено, він невидимий, але вимірюється. Кнопки є на всіх вузлах,
-          // тож кліки потрібні всім (React Flow інакше вимикає їх для вузлів, які не можна вибрати).
+          // Until a node is laid out it is invisible but measured. Every node has buttons,
+          // so all of them need clicks (otherwise React Flow disables them for non-selectable nodes).
           style: pos ? { pointerEvents: "all" } : { opacity: 0, pointerEvents: "none" },
           selectable: n.kind === "block",
           selected: selected.has(n.id),
-          // Блок тягнуть лише за ручку ⋮⋮ у заголовку, щоб не заважати редагуванню тексту.
+          // A block is dragged only by the ⋮⋮ handle in its header, so it does not get in the way of text editing.
           draggable: n.kind === "block",
           dragHandle: ".vn-drag",
           connectable: n.kind === "block",
@@ -145,8 +145,8 @@ function CanvasInner({ scene }: { scene: Scene }) {
   const edges: Edge[] = useMemo(
     () =>
       projection.edges.map((e) => {
-        // Зв'язок назад (ціль ліворуч від джерела) іде крізь дерево — малюємо його над блоками,
-        // щоб на нього можна було навести й відключити.
+        // A back link (target left of the source) runs through the tree — draw it above the blocks
+        // so it can be hovered and disconnected.
         const from = final.get(e.source);
         const to = final.get(e.target);
         const back = !!from && !!to && to.x <= from.x;
@@ -191,7 +191,7 @@ function CanvasInner({ scene }: { scene: Scene }) {
     if (dragged) setDragging(dragged);
   }, []);
 
-  // Відпустили — блоки лишаються там, де їх поставили, і позиція зберігається в проєкті.
+  // On release the blocks stay where they were put, and the position is saved in the project.
   const onNodeDragStop = useCallback(() => {
     const moved = draggingRef.current;
     if (moved.size === 0) return;
@@ -204,7 +204,7 @@ function CanvasInner({ scene }: { scene: Scene }) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
 
-  // Delete видаляє вибрані блоки; Esc скасовує чернетку.
+  // Delete removes the selected blocks; Esc cancels the draft.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
@@ -223,8 +223,8 @@ function CanvasInner({ scene }: { scene: Scene }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [scene]);
 
-  // Перетягування від виходу (FLOWS.md, 3, 8): на блок — з'єднати з ним (сходження й цикли дозволені),
-  // на порожнє місце — створити новий блок.
+  // Dragging from an output (FLOWS.md, 3, 8): onto a block — connect to it (convergence and cycles are allowed),
+  // onto empty space — create a new block.
   const outputOf = (source: string, handle: string | null | undefined): LineOutput | null => {
     const block = scene.blocks[source];
     if (!block || !handle || !block.lines.some((l) => l.id === handle)) return null;
@@ -242,7 +242,7 @@ function CanvasInner({ scene }: { scene: Scene }) {
     if (state.isValid || !state.fromNode) return;
     const from = outputOf(state.fromNode.id, state.fromHandle?.id);
     if (!from) return;
-    // Відпустили на самому блоці, а не на його точці входу — теж з'єднуємо.
+    // Released on the block itself rather than its input point — connect as well.
     const point = "changedTouches" in e ? e.changedTouches[0]! : e;
     const nodeEl = document.elementFromPoint(point.clientX, point.clientY)?.closest(".react-flow__node");
     const targetId = nodeEl?.getAttribute("data-id");
@@ -266,7 +266,7 @@ function CanvasInner({ scene }: { scene: Scene }) {
           onEdgeMouseLeave={() => hoverEdge(null)}
           onPaneClick={() => useCanvas.setState({ editing: null })}
           deleteKeyCode={null}
-          // Клавіатурна навігація React Flow перехоплює Enter/пробіл у полях на вузлах, а свою ми робимо після MVP.
+          // React Flow keyboard navigation swallows Enter/space in node inputs, and ours comes after the MVP.
           disableKeyboardA11y
           selectionKeyCode={null}
           panActivationKeyCode={null}
@@ -289,8 +289,8 @@ function CanvasInner({ scene }: { scene: Scene }) {
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#27272a" />
           <ZoomControls onAutoLayout={pinned.size > 0 ? () => void resetLayout(scene.id) : undefined} />
           {/*
-            Мінікарта: видима зараз частина — світліша, з синьою рамкою; решта притемнена.
-            Блоки помітні на тлі, вибір — фіолетовий, старт — зелений, незавершені виходи — червоні.
+            Minimap: the currently visible part is lighter with a blue frame; the rest is dimmed.
+            Blocks stand out from the background, a choice is violet, the start is green, unfinished outputs are red.
           */}
           <MiniMap
             pannable
@@ -310,7 +310,7 @@ function CanvasInner({ scene }: { scene: Scene }) {
   );
 }
 
-/** Зум і «вмістити все» з підказками (замість стандартних кнопок React Flow). */
+/** Zoom and "fit all" with tooltips (instead of the standard React Flow buttons). */
 function ZoomControls({ onAutoLayout }: { onAutoLayout?: () => void }) {
   const rf = useReactFlow();
   const btn = "flex h-8 w-8 items-center justify-center text-zinc-300 hover:bg-zinc-700 hover:text-white";
@@ -354,8 +354,8 @@ function minimapColor(n: ProjNode, scene: Scene): string {
 }
 
 /**
- * Позиції вузлів з плавним переходом: нова розкладка не стрибає, а «доїжджає» (FLOWS.md, принцип 6).
- * Анімуємо самі позиції (а не CSS), щоб зв'язки рухалися разом із вузлами.
+ * Node positions with a smooth transition: a new layout does not jump but glides into place (FLOWS.md, principle 6).
+ * We animate the positions themselves (not CSS) so links move together with the nodes.
  */
 function useAnimatedPositions() {
   const [shown, setShown] = useState<Positions>(new Map());
@@ -391,7 +391,7 @@ function useAnimatedPositions() {
     frame.current = requestAnimationFrame(step);
   }, []);
 
-  /** Поставити вузли одразу, без анімації (після перетягування). */
+  /** Place nodes immediately, without animation (after dragging). */
   const place = useCallback((next: Positions) => {
     if (frame.current !== null) cancelAnimationFrame(frame.current);
     frame.current = null;

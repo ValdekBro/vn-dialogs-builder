@@ -1,7 +1,7 @@
 /**
- * Коди помилок ядра. Вони збігаються з кодами помилок MCP (MCP.md, розділ 7),
- * тож MCP-шар передає їх агенту без перекладу.
- * Повідомлення англійською: їх читають агенти й розробники.
+ * Core error codes. They match the MCP error codes (MCP.md, section 7),
+ * so the MCP layer passes them to the agent unchanged.
+ * Messages are in English: agents and developers read them.
  */
 export type CoreErrorCode = "NOT_FOUND" | "INVALID_ARGUMENT" | "CROSS_SCENE" | "FORBIDDEN";
 

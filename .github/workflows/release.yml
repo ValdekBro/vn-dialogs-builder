@@ -1,9 +1,9 @@
-# Реліз (ARCHITECTURE.md, «Оновлення»): пуш тегу vX.Y.Z →
-#   1) prepare: перевірка версії, typecheck і тести, чернетка релізу;
-#   2) windows і mac паралельно збирають інсталятори й дозавантажують їх у чернетку;
-#   3) publish: чернетка стає опублікованим релізом — застосунки бачать нову версію.
-# Чернетку створюємо один раз заздалегідь: інакше паралельні завантаження electron-builder
-# можуть створити кілька релізів з одним тегом.
+# Release (ARCHITECTURE.md, "Updates"): pushing tag vX.Y.Z →
+#   1) prepare: version check, typecheck and tests, draft release;
+#   2) windows and mac build installers in parallel and upload them to the draft;
+#   3) publish: the draft becomes a published release — apps see the new version.
+# The draft is created once up front: otherwise parallel electron-builder uploads
+# can create several releases for the same tag.
 name: Release
 
 on:
@@ -11,14 +11,14 @@ on:
     tags: ["v*.*.*"]
 
 permissions:
-  contents: write # створити реліз і завантажити файли
+  contents: write # create the release and upload files
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4 # версію бере з packageManager у package.json
+      - uses: pnpm/action-setup@v4 # takes the version from packageManager in package.json
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -29,7 +29,7 @@ jobs:
         run: |
           APP_VERSION=$(node -p "require('./apps/desktop/package.json').version")
           if [ "v$APP_VERSION" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Тег $GITHUB_REF_NAME не збігається з версією застосунку v$APP_VERSION (apps/desktop/package.json)"
+            echo "::error::Tag $GITHUB_REF_NAME does not match the app version v$APP_VERSION (apps/desktop/package.json)"
             exit 1
           fi
       - name: Typecheck & tests
@@ -39,7 +39,7 @@ jobs:
       - name: Create draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # Опис релізу — розділ версії з CHANGELOG.md (scripts/changelog.mjs).
+        # Release notes are the version's section of CHANGELOG.md (scripts/changelog.mjs).
         run: |
           node scripts/changelog.mjs "$GITHUB_REF_NAME" > release-notes.md
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --title "VNami $GITHUB_REF_NAME" --notes-file release-notes.md
@@ -51,10 +51,10 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            # На Windows є rcedit: іконка й метадані .exe (на Mac цей крок для Windows-збірки вимкнено).
+            # Windows has rcedit: .exe icon and metadata (on Mac this step is disabled for the Windows build).
             args: --win --x64 --config.win.signAndEditExecutable=true
           - os: macos-latest
-            # Універсальна збірка (Apple Silicon + Intel) з ad-hoc підписом, див. electron-builder.yml.
+            # Universal build (Apple Silicon + Intel) with an ad-hoc signature, see electron-builder.yml.
             args: --mac --universal
     runs-on: ${{ matrix.os }}
     steps:

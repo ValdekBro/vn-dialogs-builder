@@ -15,17 +15,17 @@ export type NewLineInput = { text: string; next?: Next };
 export type AddBlockArgs = {
   sceneId: SceneId;
   characterId: CharacterId | null;
-  /** Репліки блоку, мінімум одна. Кілька — це вибір. */
+  /** The block's lines, at least one. Several lines make a choice. */
   lines: NewLineInput[];
-  /** Вихід, до якого підключити новий блок. */
+  /** The output to connect the new block to. */
   from?: Output;
-  /** Вставити між `from` і його попереднім `next`: старе продовження отримує перша репліка. */
+  /** Insert between `from` and its previous `next`: the old continuation goes to the first line. */
   insert?: boolean;
 };
 
 /**
- * Додає блок (MCP.md, 5.4; FLOWS.md, 4–5).
- * Якщо в сцені немає стартового блоку і блок ні до чого не підключається, він стає стартовим.
+ * Adds a block (MCP.md, 5.4; FLOWS.md, 4–5).
+ * If the scene has no start block and the block connects to nothing, it becomes the start block.
  */
 export const addBlock = defineCommand({
   name: "addBlock",
@@ -51,7 +51,7 @@ export const addBlock = defineCommand({
   },
 });
 
-/** Створює блок. `carried` — `next`, що переходить від виходу при вставці; його отримує перша репліка. */
+/** Creates a block. `carried` is the `next` taken over from the output on insert; the first line gets it. */
 export function buildBlock(
   project: Project,
   scene: Scene,
@@ -72,15 +72,15 @@ export type UpdateBlockArgs = {
   blockId: BlockId;
   characterId?: CharacterId | null;
   /**
-   * Повний новий список реплік. З `id` — оновлює наявну (без `next` зв'язок лишається),
-   * без `id` — створює нову. Наявні, яких немає в списку, видаляються.
+   * The full new list of lines. With `id` it updates an existing line (without `next` the link stays),
+   * without `id` it creates a new one. Existing lines missing from the list are deleted.
    */
   lines?: LineUpdateInput[];
 };
 
 /**
- * Які репліки зникнуть після `updateBlock`. MCP-шар використовує це,
- * щоб вирішити, чи потрібне підтвердження людини (MCP.md, 5.9).
+ * Which lines disappear after `updateBlock`. The MCP layer uses this
+ * to decide whether human approval is needed (MCP.md, 5.9).
  */
 export function linesRemovedByUpdate(project: Project, args: UpdateBlockArgs): LineId[] {
   if (args.lines === undefined) return [];
@@ -89,7 +89,7 @@ export function linesRemovedByUpdate(project: Project, args: UpdateBlockArgs): L
   return block.lines.filter((l) => !kept.has(l.id)).map((l) => l.id);
 }
 
-/** Повне редагування блоку одним кроком (MCP.md, 5.4). Змінюються лише передані поля. */
+/** Full block edit as one step (MCP.md, 5.4). Only the given fields change. */
 export const updateBlock = defineCommand({
   name: "updateBlock",
   label: () => "Змінити блок",
@@ -125,8 +125,8 @@ export const updateBlock = defineCommand({
 export type DeleteBlocksArgs = { blockIds: BlockId[] };
 
 /**
- * Видаляє блоки. Зв'язки, що вели в них, стають `null`; стартовий блок — теж.
- * Повертає виходи, що лишилися висячими.
+ * Deletes blocks. Links into them become `null`; so does the start block.
+ * Returns the outputs left dangling.
  */
 export const deleteBlocks = defineCommand({
   name: "deleteBlocks",

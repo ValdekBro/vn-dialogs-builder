@@ -5,8 +5,8 @@ import { t } from "../strings/uk";
 import { Tip } from "./Tip";
 
 /**
- * Індикатор агента у верхній панелі (FLOWS.md, 14): сірий — не підключений, зелений — підключений,
- * пульсує, коли агент щойно щось зробив; червоний — сервер не запустився. Клік — як підключити.
+ * Agent indicator in the top bar (FLOWS.md, 14): grey — not connected, green — connected,
+ * pulses when the agent just did something; red — the server did not start. Click — how to connect.
  */
 export function AgentButton() {
   const mcp = useAgent((s) => s.mcp);
@@ -36,7 +36,7 @@ export function AgentButton() {
   );
 }
 
-/** Поточний час, що оновлюється з інтервалом (`null` — не оновлювати). */
+/** Current time, refreshed at an interval (`null` — do not refresh). */
 export function useNow(intervalMs: number | null): number {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {

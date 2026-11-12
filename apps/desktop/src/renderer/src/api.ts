@@ -1,6 +1,6 @@
 import type { ApiError, ApiMethod, ApiMethods, CommandName } from "../../shared/api";
 
-/** Помилка виклику головного процесу з кодом (NOT_FOUND, INVALID_ARGUMENT, ...). */
+/** Error from a main-process call, with a code (NOT_FOUND, INVALID_ARGUMENT, ...). */
 export class ApiCallError extends Error {
   readonly code: string;
   readonly details: unknown;
@@ -12,14 +12,14 @@ export class ApiCallError extends Error {
   }
 }
 
-/** Виклик методу головного процесу. Помилка перетворюється назад на виняток. */
+/** Calls a main-process method. An error is turned back into an exception. */
 export async function call<M extends ApiMethod>(method: M, ...args: ApiMethods[M][0]): Promise<ApiMethods[M][1]> {
   const result = await window.vn.invoke(method, ...args);
   if (!result.ok) throw new ApiCallError(result.error);
   return result.value;
 }
 
-/** Виконати команду ядра над відкритим проєктом. */
+/** Runs a core command on the open project. */
 export function execute<R = unknown>(command: CommandName, args: unknown): Promise<R> {
   return call("session.execute", command, args) as Promise<R>;
 }

@@ -4,11 +4,11 @@ import type { BlockId, Position, SceneId } from "../schema/entities";
 import { defineCommand } from "./util";
 
 export type MoveBlocksArgs = {
-  /** Нова позиція кожного блоку; `null` повертає блок в автоматичну розкладку. */
+  /** New position for each block; `null` returns the block to automatic layout. */
   moves: { blockId: BlockId; pos: Position | null }[];
 };
 
-/** Ручне розташування блоків на полотні (FLOWS.md, 8a). Одна дія скасування на все перетягування. */
+/** Manual block placement on the canvas (FLOWS.md, 8a). One undo step for the whole drag. */
 export const moveBlocks = defineCommand({
   name: "moveBlocks",
   label: (a: MoveBlocksArgs) =>
@@ -34,7 +34,7 @@ export const moveBlocks = defineCommand({
 
 export type ResetLayoutArgs = { sceneId: SceneId };
 
-/** Забути всі ручні позиції сцени: розкладка знову повністю автоматична. */
+/** Forget all manual positions in the scene: layout is fully automatic again. */
 export const resetLayout = defineCommand({
   name: "resetLayout",
   label: () => "Авторозкладка",

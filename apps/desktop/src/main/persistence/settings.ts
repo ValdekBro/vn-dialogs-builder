@@ -3,10 +3,10 @@ import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import { writeFileAtomic } from "./fs-atomic";
 
-/** Налаштування застосунку (`settings.json` у сховищі). Не плутати з файлами проєктів. */
+/** App settings (`settings.json` in storage). Not to be confused with project files. */
 export const Settings = z.object({
   version: z.literal(1).default(1),
-  /** Проєкт, що відкриється під час наступного запуску. */
+  /** The project to open on next launch. */
   lastProjectId: z.string().nullable().default(null),
   mcp: z
     .object({
@@ -14,9 +14,9 @@ export const Settings = z.object({
       token: z.string().min(16).optional(),
     })
     .default({ port: 47821 }),
-  /** «Підтверджувати видалення агентом» (MCP.md, 5.9). */
+  /** "Confirm agent deletions" (MCP.md, 5.9). */
   confirmAgentDeletes: z.boolean().default(true),
-  /** Скільки секунд MCP-виклик чекає на підтвердження людини. */
+  /** How many seconds an MCP call waits for human approval. */
   approvalTimeoutSec: z.number().int().min(5).max(3600).default(120),
 });
 
@@ -30,7 +30,7 @@ export class SettingsStore {
     this.#path = path;
   }
 
-  /** Читає налаштування. Відсутній або пошкоджений файл — значення за замовчуванням. */
+  /** Reads settings. A missing or corrupted file gives the defaults. */
   async load(): Promise<Settings> {
     let raw: unknown = {};
     try {

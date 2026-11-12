@@ -16,8 +16,8 @@ import { SettingsStore } from "../src/main/persistence/settings";
 import { ProjectStore } from "../src/main/project-store/project-store";
 
 /**
- * Застосунок Claude для комп'ютера (MCP.md, 2): міст stdio ↔ HTTP і запис у конфіг Claude.
- * Міст перевіряємо справжнім MCP-клієнтом, що говорить із ним рядками JSON, як Claude.
+ * The Claude desktop app (MCP.md, 2): the stdio ↔ HTTP bridge and the entry in Claude's config.
+ * The bridge is tested with a real MCP client talking to it in JSON lines, like Claude does.
  */
 
 const TOKEN = "test-token-0123456789abcdef";
@@ -30,7 +30,7 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
-/** Транспорт клієнта поверх пари потоків — те саме, що stdio-процес мосту для Claude. */
+/** Client transport over a pair of streams — the same as the bridge's stdio process for Claude. */
 function pipeTransport(toBridge: PassThrough, fromBridge: PassThrough): Transport {
   let buf = "";
   const t: Transport = {
@@ -131,7 +131,7 @@ describe("Claude app config", () => {
     const path = join(dir, "Claude", "claude_desktop_config.json");
     expect(await claudeDesktopStatus(path, entry)).toMatchObject({ found: false, connected: false });
 
-    await installClaudeDesktop(path, entry); // ні файлу, ні папки ще немає
+    await installClaudeDesktop(path, entry); // neither the file nor the folder exists yet
     await writeFile(
       path,
       JSON.stringify({ preferences: { quickEntryShortcut: "off" }, mcpServers: { other: { command: "x" }, vnami: { command: "old" } } }),

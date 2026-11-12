@@ -6,7 +6,7 @@ type Props = {
   placeholder?: string;
   multiline?: boolean;
   className?: string;
-  /** Порожнє значення не приймається (назви). */
+  /** An empty value is not accepted (names). */
   required?: boolean;
   autoFocus?: boolean;
   onCancel?: () => void;
@@ -15,15 +15,15 @@ type Props = {
 };
 
 /**
- * Поле, що зберігає зміни на Enter або коли втрачає фокус; Esc повертає попереднє значення.
- * У багаторядковому режимі Enter зберігає, а Shift+Enter робить перенос рядка (FLOWS.md, принципи).
+ * An input that saves on Enter or on blur; Esc restores the previous value.
+ * In multiline mode Enter saves and Shift+Enter inserts a line break (FLOWS.md, principles).
  */
 export function InlineEdit({ value, onCommit, placeholder, multiline, className, required, autoFocus, onCancel, ariaLabel, rows = 3 }: Props) {
   const [draft, setDraft] = useState(value);
   const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const cancelled = useRef(false);
 
-  // Значення могло змінитися ззовні (undo, агент): підхоплюємо, якщо поле не редагується.
+  // The value may have changed from outside (undo, agent): pick it up if the field is not being edited.
   useEffect(() => {
     if (document.activeElement !== ref.current) setDraft(value);
   }, [value]);
@@ -32,7 +32,7 @@ export function InlineEdit({ value, onCommit, placeholder, multiline, className,
     if (autoFocus) ref.current?.select();
   }, [autoFocus]);
 
-  // Багаторядкове поле росте разом з текстом, без внутрішньої прокрутки.
+  // A multiline field grows with its text, without inner scrolling.
   useEffect(() => {
     const el = ref.current;
     if (!multiline || !el) return;

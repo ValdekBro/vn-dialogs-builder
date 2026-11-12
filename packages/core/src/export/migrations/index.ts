@@ -1,9 +1,9 @@
 /**
- * Міграції файлу експорту (SCHEMA.md, розділ 8).
+ * Export file migrations (SCHEMA.md, section 8).
  *
- * Ключ — версія, з якої мігрує функція: `EXPORT_MIGRATIONS[1]` перетворює v1 на v2.
- * Імпорт приймає будь-яку версію, що колись виходила, тож міграції ніколи не видаляються.
- * Кожну нову версію запишіть у журнал змін у SCHEMA.md і покрийте тестом на фікстурі.
+ * The key is the version the function migrates FROM: `EXPORT_MIGRATIONS[1]` turns v1 into v2.
+ * Import accepts any version ever released, so migrations are never removed.
+ * Record every new version in the changelog in SCHEMA.md and cover it with a fixture test.
  */
 type RawExport = Record<string, unknown>;
 type Migration = (raw: RawExport) => RawExport;

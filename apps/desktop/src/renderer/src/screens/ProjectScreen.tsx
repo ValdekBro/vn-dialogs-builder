@@ -11,7 +11,7 @@ import { BuilderView } from "../views/BuilderView";
 import { CharactersView } from "../views/CharactersView";
 import { ProjectInfoView } from "../views/ProjectInfoView";
 
-/** Відкритий проєкт: верхня панель і один із трьох розділів. */
+/** The open project: top bar and one of three sections. */
 export function ProjectScreen() {
   const project = useApp((s) => s.project)!;
   const view = useApp((s) => s.view);
@@ -93,7 +93,7 @@ function ToolbarButton(props: { label: string; title: string; disabled: boolean;
   );
 }
 
-/** Швидке перемикання проєктів з верхньої панелі (FLOWS.md, 15). */
+/** Quick project switching from the top bar (FLOWS.md, 15). */
 function ProjectSwitcher({ project }: { project: Project }) {
   const projects = useApp((s) => s.projects);
   const [open, setOpen] = useState(false);
@@ -153,7 +153,7 @@ function ProjectSwitcher({ project }: { project: Project }) {
   );
 }
 
-/** Ctrl/Cmd+Z і Shift+Ctrl/Cmd+Z. Поки фокус у текстовому полі, діє власний undo поля. */
+/** Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z. While focus is in a text field, the field's own undo applies. */
 function useUndoHotkeys() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

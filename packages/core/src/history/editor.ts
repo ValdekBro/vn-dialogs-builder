@@ -6,11 +6,11 @@ import { findInvariantViolations } from "../schema/invariants";
 
 enablePatches();
 
-/** Хто зробив зміну. Зміни агента підсвічуються в UI (MCP.md, принцип 4). */
+/** Who made the change. Agent changes are highlighted in the UI (MCP.md, principle 4). */
 export type ChangeSource = "user" | "agent";
 
 export type HistoryEntry = {
-  /** Наскрізний номер зміни. */
+  /** Running change number. */
   seq: number;
   command: string;
   label: string;
@@ -22,9 +22,9 @@ export type HistoryEntry = {
 
 export type ChangeEvent = {
   type: "execute" | "undo" | "redo" | "reset";
-  /** Для execute/undo/redo — запис історії, якого стосується подія. */
+  /** For execute/undo/redo — the history entry the event refers to. */
   entry: HistoryEntry | null;
-  /** Патчі, які треба застосувати до попереднього стану, щоб отримати поточний. */
+  /** Patches to apply to the previous state to get the current one. */
   patches: Patch[];
   project: Project;
 };
@@ -40,16 +40,16 @@ export class InvariantError extends Error {
 
 export type ProjectEditorOptions = {
   newId?: IdGenerator;
-  /** Скільки кроків undo зберігати. */
+  /** How many undo steps to keep. */
   historyLimit?: number;
-  /** Перевіряти інваріанти після кожної команди. Вимикати лише для вимірювань. */
+  /** Check invariants after every command. Turn off only for benchmarks. */
   checkInvariants?: boolean;
   now?: () => number;
 };
 
 /**
- * Поточний проєкт + спільна для людини й агента історія undo/redo (ARCHITECTURE.md, 2.4).
- * Кожна команда — один крок історії. Невдала команда не змінює нічого.
+ * The current project + undo/redo history shared by the human and the agent (ARCHITECTURE.md, 2.4).
+ * Every command is one history step. A failed command changes nothing.
  */
 export class ProjectEditor {
   #project: Project;
@@ -82,7 +82,7 @@ export class ProjectEditor {
     return this.#redo.length > 0;
   }
 
-  /** Опис дії, яку скасує наступний undo. */
+  /** Description of the action the next undo reverts. */
   get undoLabel(): string | null {
     return this.#undo.at(-1)?.label ?? null;
   }
@@ -96,7 +96,7 @@ export class ProjectEditor {
     return () => this.#listeners.delete(listener);
   }
 
-  /** Виконує команду. Якщо вона нічого не змінила, у історію нічого не потрапляє. */
+  /** Runs a command. If it changed nothing, nothing goes into history. */
   run<A, R>(command: Command<A, R>, args: A, source: ChangeSource = "user"): R {
     let result!: R;
     const [next, patches, inversePatches] = produceWithPatches(this.#project, (draft) => {
@@ -142,7 +142,7 @@ export class ProjectEditor {
     return entry;
   }
 
-  /** Замінює проєкт і очищує історію (перемикання проєкту). */
+  /** Replaces the project and clears history (switching projects). */
   reset(project: Project): void {
     this.#project = project;
     this.#undo = [];

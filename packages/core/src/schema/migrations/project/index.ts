@@ -2,26 +2,26 @@ import { PROJECT_FORMAT, PROJECT_VERSION } from "../../entities";
 import { migrateV1toV2 } from "./v1-to-v2";
 
 /**
- * Міграції файлу проєкту (SCHEMA.md, розділ 7).
+ * Project file migrations (SCHEMA.md, section 7).
  *
- * Ключ — версія, З ЯКОЇ мігрує функція: `MIGRATIONS[1]` перетворює v1 на v2.
- * Кожна міграція — чиста функція над сирим JSON і має тест на фікстурі старої версії.
- * Коли піднімаєте PROJECT_VERSION, додайте сюди міграцію з попередньої версії.
+ * The key is the version the function migrates FROM: `MIGRATIONS[1]` turns v1 into v2.
+ * Every migration is a pure function over raw JSON and has a test on an old-version fixture.
+ * When you bump PROJECT_VERSION, add the migration from the previous version here.
  */
 type RawProject = Record<string, unknown>;
 type Migration = (raw: RawProject) => RawProject;
 
 export const PROJECT_MIGRATIONS: Record<number, Migration> = {
   1: migrateV1toV2,
-  // v3 лише додав новий вид `next` — перехід до сцени. Наявні дані не змінюються.
+  // v3 only added a new kind of `next` — a jump to a scene. Existing data does not change.
   2: (raw) => raw,
-  // v4 лише додав необов'язкову ручну позицію блоку (`pos`). Наявні дані не змінюються.
+  // v4 only added an optional manual block position (`pos`). Existing data does not change.
   3: (raw) => raw,
 };
 
 export type ProjectMigrationResult = {
   data: RawProject;
-  /** Версія файлу до міграції. Якщо вона менша за поточну, потрібна резервна копія. */
+  /** File version before migration. If it is lower than the current one, a backup is needed. */
   fromVersion: number;
 };
 

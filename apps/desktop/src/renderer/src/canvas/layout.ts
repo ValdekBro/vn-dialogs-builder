@@ -8,18 +8,18 @@ export type Point = { x: number; y: number };
 export type Positions = Map<string, Point>;
 
 /**
- * Розкладка дерева зліва направо (ARCHITECTURE.md, 2.3). Порядок виходів фіксований,
- * тож гілки варіантів ідуть у тому ж порядку, що й варіанти в блоці, і стрілки не перехрещуються.
+ * Left-to-right tree layout (ARCHITECTURE.md, 2.3). The output order is fixed,
+ * so choice branches go in the same order as the options in the block, and arrows do not cross.
  *
- * Блоки, які користувач переставив вручну (`pinned`), стоять там, де їх поставили;
- * їхні службові вузли (`(+)`, «Кінець», перехід на сцену, чернетка) їдуть разом із ними.
+ * Blocks the user moved manually (`pinned`) stay where they were put;
+ * their service nodes (`(+)`, "End", scene jump, draft) move with them.
  */
 export async function layoutProjection(
   projection: Projection,
   sizes: Map<string, Size>,
   pinned: Map<string, Point> = new Map(),
 ): Promise<Positions> {
-  // Порти кожного вузла в порядку виходів: ребра проєкції вже йдуть у цьому порядку.
+  // Ports of each node in output order: projection edges already come in this order.
   const ports = new Map<string, string[]>();
   for (const e of projection.edges) {
     const list = ports.get(e.source) ?? [];
@@ -38,8 +38,8 @@ export async function layoutProjection(
       "elk.spacing.componentComponent": "56",
       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
       "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
-      // Цикл рвемо обходом у глибину: назад вважаються лише справжні зв'язки назад по гілці,
-      // а сходження (зв'язок у блок сусідньої гілки) лишається звичайною лінією вперед.
+      // Cycles are broken by a depth-first walk: only real back links along a branch count as backward,
+      // while convergence (a link into a block of a neighbouring branch) stays an ordinary forward line.
       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
       "elk.layered.crossingMinimization.forceNodeModelOrder": "true",
       "elk.separateConnectedComponents": "true",
@@ -53,7 +53,7 @@ export async function layoutProjection(
         height: size.height,
         layoutOptions: { "elk.portConstraints": "FIXED_ORDER" },
         ports: [
-          // Індекси йдуть за годинниковою стрілкою: праворуч — згори вниз, ліворуч — після них.
+          // Indices go clockwise: right side top to bottom, left side after them.
           ...nodePorts.map((id, i) => ({
             id,
             layoutOptions: { "elk.port.side": "EAST", "elk.port.index": String(i) },
@@ -75,7 +75,7 @@ export async function layoutProjection(
   return applyPinned(projection, positions, pinned);
 }
 
-/** Ручні позиції блоків поверх автоматичної розкладки. Чистa функція — для тестів. */
+/** Manual block positions on top of the automatic layout. A pure function — for tests. */
 export function applyPinned(projection: Projection, auto: Positions, pinned: Map<string, Point>): Positions {
   if (pinned.size === 0) return auto;
   const out: Positions = new Map(auto);
@@ -87,8 +87,8 @@ export function applyPinned(projection: Projection, auto: Positions, pinned: Map
     out.set(n.id, p);
     shift.set(n.id, { x: p.x - a.x, y: p.y - a.y });
   }
-  // Службові вузли (не блоки) зсуваються так само, як блок, з якого в них веде зв'язок.
-  // Ланцюжок «чернетка → (+)» — тому кілька проходів.
+  // Service nodes (not blocks) shift the same way as the block their link comes from.
+  // The chain "draft → (+)" needs several passes.
   const kind = new Map(projection.nodes.map((n) => [n.id, n.kind]));
   for (let changed = true; changed; ) {
     changed = false;

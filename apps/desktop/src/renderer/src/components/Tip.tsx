@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 type Side = "top" | "bottom" | "left" | "right";
 
 type Props = {
-  /** Коротко, одним-кількома словами: що зробить кнопка. */
+  /** Short, one or a few words: what the button does. */
   label: string;
   children: ReactElement<React.HTMLAttributes<HTMLElement> & { ref?: React.Ref<HTMLElement> }>;
   side?: Side;
@@ -13,8 +13,8 @@ type Props = {
 const DELAY_MS = 350;
 
 /**
- * Підказка при наведенні на кнопку. Малюється поверх усього (portal), тож не масштабується
- * разом із полотном і не обрізається краями панелей.
+ * Tooltip on button hover. Rendered above everything (portal), so it does not scale
+ * with the canvas and is not clipped by panel edges.
  */
 export function Tip({ label, children, side = "top" }: Props) {
   const [rect, setRect] = useState<DOMRect | null>(null);

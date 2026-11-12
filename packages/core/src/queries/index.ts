@@ -13,7 +13,7 @@ export function getCharacter(project: Project, characterId: string): Character {
   return ch;
 }
 
-/** Блоки мають глобальні ID, тож сцену можна не вказувати. */
+/** Blocks have global IDs, so the scene can be omitted. */
 export function findBlock(project: Project, blockId: string): { scene: Scene; block: Block } | undefined {
   for (const scene of Object.values(project.scenes)) {
     const block = scene.blocks[blockId];
@@ -44,12 +44,12 @@ export function getLine(project: Project, lineId: string) {
   return found;
 }
 
-/** Усі виходи блоку з їхніми `next`. */
+/** All outputs of a block with their `next`. */
 export function blockOutputs(block: Block): { output: Required<Output>; next: Next }[] {
   return block.lines.map((l) => ({ output: { blockId: block.id, lineId: l.id }, next: l.next }));
 }
 
-/** Індекс вхідних зв'язків сцени: blockId → виходи, що ведуть у нього. */
+/** Index of a scene's incoming links: blockId → outputs leading into it. */
 export function incomingIndex(scene: Scene): Map<BlockId, Required<Output>[]> {
   const index = new Map<BlockId, Required<Output>[]>();
   for (const block of Object.values(scene.blocks)) {
@@ -68,8 +68,8 @@ export function incomingOf(scene: Scene, blockId: BlockId): Required<Output>[] {
 }
 
 /**
- * Обхід у глибину від стартового блоку у порядку виходів.
- * Повертає ID досяжних блоків у порядку першого відвідування.
+ * Depth-first walk from the start block in output order.
+ * Returns the IDs of reachable blocks in first-visit order.
  */
 export function traversalOrder(scene: Scene): BlockId[] {
   const order: BlockId[] = [];
@@ -86,7 +86,7 @@ export function traversalOrder(scene: Scene): BlockId[] {
     const targets = blockOutputs(block)
       .map(({ next }) => (next?.type === "block" ? next.blockId : null))
       .filter((t): t is BlockId => t !== null);
-    // у зворотному порядку, щоб перший вихід обходився першим
+    // in reverse order so the first output is visited first
     for (let i = targets.length - 1; i >= 0; i--) {
       if (!seen.has(targets[i]!)) stack.push(targets[i]!);
     }
@@ -99,8 +99,8 @@ export function reachableBlocks(scene: Scene): Set<BlockId> {
 }
 
 /**
- * Сцена, блок і репліка виходу. Кидає помилку, якщо виходу не існує.
- * Без `lineId` вихід однозначний лише тоді, коли в блоці одна репліка.
+ * Scene, block and line of an output. Throws if the output does not exist.
+ * Without `lineId` the output is unambiguous only when the block has one line.
  */
 export function resolveOutput(project: Project, output: Output) {
   const { scene, block } = getBlock(project, output.blockId);
@@ -118,8 +118,8 @@ export function resolveOutput(project: Project, output: Output) {
 }
 
 /**
- * Персонаж за ID (`chr_…`) або за точним ім'ям (MCP.md, принцип 5).
- * Неоднозначне або невідоме ім'я — INVALID_ARGUMENT зі списком кандидатів.
+ * Character by ID (`chr_…`) or by exact name (MCP.md, principle 5).
+ * An ambiguous or unknown name is INVALID_ARGUMENT with a list of candidates.
  */
 export function resolveCharacter(project: Project, ref: string): Character {
   const byId = project.characters[ref];
@@ -141,12 +141,12 @@ export type FindBlocksArgs = {
   query?: string;
   characterId?: string;
   sceneId?: SceneId;
-  /** Лише блоки з вибором (кілька реплік). */
+  /** Only blocks with a choice (several lines). */
   choicesOnly?: boolean;
   limit?: number;
 };
 
-/** Пошук блоків: підрядок без урахування регістру в тексті реплік. */
+/** Block search: case-insensitive substring in line text. */
 export function findBlocks(project: Project, args: FindBlocksArgs = {}): { sceneId: SceneId; block: Block }[] {
   const limit = args.limit ?? 50;
   const q = args.query?.toLocaleLowerCase();
@@ -185,10 +185,10 @@ export function countBlocksOfCharacter(project: Project, characterId: string): n
 
 
 /**
- * Блоки, з якими можна з'єднати вихід (FLOWS.md, 8): будь-який блок сцени.
- * Дозволені й сходження (у блок веде кілька зв'язків), і цикли (зв'язок назад по гілці
- * або в той самий блок — наприклад, повернутися до меню питань).
- * Порядок — як на полотні: спершу обхід від старту, потім решта.
+ * Blocks an output can be connected to (FLOWS.md, 8): any block of the scene.
+ * Both convergence (several links into one block) and cycles (a link back along the branch
+ * or into the same block — e.g. returning to a question menu) are allowed.
+ * Order matches the canvas: first the walk from the start, then the rest.
  */
 export function linkTargets(scene: Scene, _fromBlockId: BlockId): BlockId[] {
   const order = traversalOrder(scene);

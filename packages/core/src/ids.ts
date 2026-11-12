@@ -1,4 +1,4 @@
-/** Префікси ID за типом сутності (SCHEMA.md, розділ 1.6). */
+/** ID prefixes by entity type (SCHEMA.md, section 1.6). */
 export const ID_PREFIX = {
   project: "prj",
   character: "chr",
@@ -12,10 +12,10 @@ export type IdPrefix = (typeof ID_PREFIX)[keyof typeof ID_PREFIX];
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
 const ID_LENGTH = 10;
 
-/** Генератор ID. Команди отримують його ззовні, щоб у тестах ID були передбачуваними. */
+/** ID generator. Commands receive it from outside so IDs are predictable in tests. */
 export type IdGenerator = (prefix: IdPrefix) => string;
 
-/** Випадкові ID: `<prefix>_` + 10 символів з алфавіту nanoid. */
+/** Random IDs: `<prefix>_` + 10 characters from the nanoid alphabet. */
 export const randomId: IdGenerator = (prefix) => {
   const bytes = new Uint8Array(ID_LENGTH);
   crypto.getRandomValues(bytes);
@@ -24,7 +24,7 @@ export const randomId: IdGenerator = (prefix) => {
   return `${prefix}_${out}`;
 };
 
-/** Детермінований генератор для тестів: `blk_0000000001`, `blk_0000000002`, ... */
+/** Deterministic generator for tests: `blk_0000000001`, `blk_0000000002`, ... */
 export function sequentialIds(): IdGenerator {
   const counters = new Map<string, number>();
   return (prefix) => {

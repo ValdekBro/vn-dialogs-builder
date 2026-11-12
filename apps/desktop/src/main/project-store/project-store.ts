@@ -8,15 +8,15 @@ import { AppError } from "./errors";
 export type ProjectStoreOptions = {
   repo: ProjectRepository;
   settings: SettingsStore;
-  /** Інтервал автозбереження, мс. 0 — без таймера (тести викликають `flush()` самі). */
+  /** Autosave interval, ms. 0 — no timer (tests call `flush()` themselves). */
   autosaveMs?: number;
 };
 
 type Listener = (event: SessionEvent) => void;
 
 /**
- * Єдине джерело правди про відкритий проєкт (ARCHITECTURE.md, розділ 4).
- * Виконує команди людини й агента, веде спільну історію, розсилає патчі й автоматично зберігає.
+ * The single source of truth about the open project (ARCHITECTURE.md, section 4).
+ * Runs human and agent commands, keeps the shared history, broadcasts patches and autosaves.
  */
 export class ProjectStore {
   #repo: ProjectRepository;
@@ -58,7 +58,7 @@ export class ProjectStore {
     return { project: this.#editor.project, version: this.#version, history: this.#history(), save: this.#save };
   }
 
-  // ── Проєкти ───────────────────────────────────────────────
+  // ── Projects ──────────────────────────────────────────────
 
   listProjects(): Promise<ProjectSummary[]> {
     return this.#repo.list();
@@ -86,7 +86,7 @@ export class ProjectStore {
     return snapshot;
   }
 
-  /** Відкриває проєкт, що був відкритий минулого разу. Якщо його вже немає або він не читається — нічого. */
+  /** Opens the project that was open last time. If it is gone or unreadable, does nothing. */
   async openLastProject(): Promise<SessionSnapshot | null> {
     const id = this.#settings.value.lastProjectId;
     if (!id || !(await this.#repo.exists(id))) return null;
@@ -122,7 +122,7 @@ export class ProjectStore {
     await this.#broadcastProjects();
   }
 
-  // ── Зміни моделі ──────────────────────────────────────────
+  // ── Model changes ─────────────────────────────────────────
 
   execute(name: CommandName, args: unknown, source: ChangeSource): unknown {
     const editor = this.#requireEditor();
@@ -138,9 +138,9 @@ export class ProjectStore {
     return this.#requireEditor().redo()?.label ?? null;
   }
 
-  // ── Збереження ────────────────────────────────────────────
+  // ── Saving ────────────────────────────────────────────────
 
-  /** Записує файл, якщо є незбережені зміни. Безпечно викликати будь-коли й скільки завгодно. */
+  /** Writes the file if there are unsaved changes. Safe to call any time, any number of times. */
   async flush(): Promise<void> {
     while (this.#saving) await this.#saving;
     const editor = this.#editor;
@@ -161,14 +161,14 @@ export class ProjectStore {
     await this.#saving;
   }
 
-  /** Зупиняє автозбереження й дозберігає зміни (вихід із застосунку). */
+  /** Stops autosave and flushes changes (app quit). */
   async dispose(): Promise<void> {
     if (this.#timer) clearInterval(this.#timer);
     this.#timer = null;
     await this.flush();
   }
 
-  // ── Внутрішнє ─────────────────────────────────────────────
+  // ── Internal ──────────────────────────────────────────────
 
   #onChange(e: ChangeEvent) {
     if (e.type === "reset" || !e.entry) return;

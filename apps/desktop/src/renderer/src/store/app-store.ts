@@ -11,16 +11,16 @@ const EMPTY_HISTORY: HistoryState = { canUndo: false, canRedo: false, undoLabel:
 export type AppState = {
   ready: boolean;
   projects: ProjectSummary[];
-  /** Дзеркало моделі з головного процесу. Змінюється лише патчами, ніколи напряму. */
+  /** Mirror of the model from the main process. Changed only by patches, never directly. */
   project: Project | null;
   version: number;
   history: HistoryState;
   save: SaveState;
-  /** Вибрана сцена — стан редактора, не моделі. */
+  /** The selected scene — editor state, not model state. */
   sceneId: string | null;
-  /** Який розділ проєкту відкрито: білдер діалогів, персонажі чи інформація про проєкт. */
+  /** Which project section is open: dialogue builder, characters or project info. */
   view: ProjectView;
-  /** Персонаж, відкритий у розділі «Персонажі». */
+  /** The character open in the "Characters" section. */
   characterId: string | null;
 };
 
@@ -49,7 +49,7 @@ function applySnapshot(s: SessionSnapshot) {
   });
 }
 
-/** Лишає вибрану сцену, якщо вона ще існує, інакше бере першу. */
+/** Keeps the selected scene if it still exists, otherwise takes the first. */
 function pickScene(project: Project, current: string | null): string | null {
   if (current && project.scenes[current]) return current;
   return project.sceneOrder[0] ?? null;
@@ -72,7 +72,7 @@ function onEvent(event: SessionEvent) {
       useApp.setState({ project: null, version: 0, history: EMPTY_HISTORY, sceneId: null });
       return;
     case "changed": {
-      // Пропущена подія означає, що дзеркало розійшлося з моделлю: перечитуємо знімок повністю.
+      // A missed event means the mirror has diverged from the model: reload the whole snapshot.
       if (!state.project || event.version !== state.version + 1) {
         void resync();
         return;
@@ -97,7 +97,7 @@ function onEvent(event: SessionEvent) {
 
 let started = false;
 
-/** Підписка на події головного процесу й початкове завантаження. Викликається один раз. */
+/** Subscribes to main-process events and does the initial load. Called once. */
 export async function startAppStore() {
   if (started) return;
   started = true;
@@ -114,7 +114,7 @@ export function showView(view: ProjectView) {
   useApp.setState({ view });
 }
 
-/** Відкрити сторінку персонажа в розділі «Персонажі». */
+/** Open a character's page in the "Characters" section. */
 export function openCharacter(characterId: string) {
   useApp.setState({ view: "characters", characterId });
 }

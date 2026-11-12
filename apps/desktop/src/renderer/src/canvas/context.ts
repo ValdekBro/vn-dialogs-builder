@@ -1,10 +1,10 @@
 import type { Issue, Scene } from "@vn/core";
 import { createContext, useContext } from "react";
 
-/** Дані сцени, спільні для всіх вузлів полотна. */
+/** Scene data shared by all canvas nodes. */
 export type CanvasData = {
   scene: Scene;
-  /** Проблеми за id блоку або за ключем виходу `blk_…:ln_…`. */
+  /** Issues by block id or by output key `blk_…:ln_…`. */
   issuesByBlock: Map<string, Issue[]>;
   issuesByOutput: Map<string, Issue[]>;
 };

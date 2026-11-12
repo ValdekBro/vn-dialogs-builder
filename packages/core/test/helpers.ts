@@ -1,6 +1,6 @@
 import { addTree, createCharacter, createProject, getAuthor, ProjectEditor, sequentialIds, type Block, type Project } from "../src";
 
-/** Тексти зі сцени «Ранок» — реальні репліки, щоб тести бачили справжній текст (багатокрапки, апострофи, імена). */
+/** Texts from the «Ранок» (Morning) scene — real lines, so tests see real text (ellipses, apostrophes, names). */
 export const TEXT = {
   knock: "[Стук-стук у двері]",
   dad: "Ти вже прокинулася? Відра з водою порожні. Сходи по воду.",
@@ -12,7 +12,7 @@ export const TEXT = {
   well: "[До криниці стежка йде повз старий млин]",
 } as const;
 
-/** Порожній проєкт з передбачуваними ID: Автор `chr_0000000001`, Сцена 1 `scn_0000000001`. */
+/** Empty project with predictable IDs: Автор `chr_0000000001`, Сцена 1 `scn_0000000001`. */
 export function setup() {
   const newId = sequentialIds();
   const project = createProject({ name: "Ранок у селі", appVersion: "0.0.0-test", newId });
@@ -23,8 +23,8 @@ export function setup() {
 }
 
 /**
- * Сцена «Ранок»: Автор → Татко → ГГ → Автор → Бен → ГГ обирає (прийняти допомогу / відмовитись) →
- * обидва варіанти сходяться в «До криниці…», де сцена закінчується.
+ * The «Ранок» scene: Автор → Татко → ГГ → Автор → Бен → ГГ chooses (accept help / decline) →
+ * both options converge into «До криниці…», where the scene ends.
  */
 export function setupMorning() {
   const ctx = setup();
@@ -92,7 +92,7 @@ export function block(project: Project, blockId: string): Block {
   throw new Error(`no block ${blockId}`);
 }
 
-/** Репліка блоку (за замовчуванням перша). */
+/** A block's line (the first by default). */
 export function line(project: Project, blockId: string, index = 0) {
   return block(project, blockId).lines[index]!;
 }

@@ -3,7 +3,7 @@ packages:
   - "apps/*"
 
 
-# Залежності, які пакети забули оголосити (pnpm суворий і без цього їх не знаходить).
+# Dependencies that packages forgot to declare (pnpm is strict and cannot find them otherwise).
 packageExtensions:
   "@peculiar/utils":
     dependencies:

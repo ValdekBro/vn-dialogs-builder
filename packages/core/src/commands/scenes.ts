@@ -49,7 +49,7 @@ export const updateScene = defineCommand({
 
 export type DeleteSceneArgs = { sceneId: SceneId };
 
-/** Видаляє сцену. Переходи до неї з інших сцен стають `null` (непідключені виходи). */
+/** Deletes a scene. Jumps into it from other scenes become `null` (dangling outputs). */
 export const deleteScene = defineCommand({
   name: "deleteScene",
   label: () => "Видалити сцену",
@@ -74,7 +74,7 @@ export const deleteScene = defineCommand({
 
 export type DuplicateSceneArgs = { sceneId: SceneId; name?: string };
 
-/** Копія сцени з новими ID, вставляється одразу після оригіналу. */
+/** A copy of the scene with new IDs, inserted right after the original. */
 export const duplicateScene = defineCommand({
   name: "duplicateScene",
   label: () => "Дублювати сцену",
@@ -107,9 +107,9 @@ export const reorderScenes = defineCommand({
 });
 
 /**
- * Глибока копія блоків з новими ID блоків і реплік.
- * Зв'язки між скопійованими блоками переносяться на копії, а зв'язок на блок поза набором
- * віддається `outside`, який вирішує, що з ним робити (зберегти чи обнулити).
+ * Deep copy of blocks with new block and line IDs.
+ * Links between copied blocks move to the copies, and a link to a block outside the set
+ * is handed to `outside`, which decides what to do with it (keep or clear).
  */
 export function cloneBlocks(
   source: Block[],

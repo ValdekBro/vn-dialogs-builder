@@ -134,10 +134,10 @@ describe("manual positions", () => {
     const out = applyPinned(projection, auto, pinned);
 
     expect(out.get(ids.ask)).toEqual({ x: askAuto.x + 40, y: 500 });
-    // Відкритий вихід «А ти чого так рано?» — (+) — їде разом із блоком вибору.
+    // The open output «А ти чого так рано?» — (+) — moves with the choice block.
     const stub = projection.nodes.find((n) => n.kind === "stub" && n.id.startsWith(`stub:${ids.ask}`))!;
     expect(out.get(stub.id)).toEqual({ x: auto.get(stub.id)!.x + 40, y: 500 });
-    // Блок, у який веде вибір, — окремий блок, він не рухається.
+    // The block the choice leads into is a separate block; it does not move.
     expect(out.get(ids.bell)).toEqual(auto.get(ids.bell));
     expect(out.get(ids.a)).toEqual(auto.get(ids.a));
   });

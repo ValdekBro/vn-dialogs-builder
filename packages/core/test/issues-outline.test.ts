@@ -28,7 +28,7 @@ describe("issues", () => {
   it("detects each problem", () => {
     const { editor, sceneId, ids, benId, authorId } = setupMorning();
     editor.run(deleteCharacter, { characterId: benId }); // missing_character
-    editor.run(addLine, { blockId: ids.answer, text: "" }); // empty_text + dangling_output (варіант)
+    editor.run(addLine, { blockId: ids.answer, text: "" }); // empty_text + dangling_output (option)
     editor.run(addBlock, { sceneId, characterId: authorId, lines: [{ text: " " }] }); // unreachable + empty_text + dangling_output
 
     const codes = projectIssues(editor.project).map((i) => i.code).sort();
@@ -124,7 +124,7 @@ describe("linkTargets", () => {
     const scene = () => editor.project.scenes[sceneId]!;
     const all = [ids.knock, ids.dad, ids.wake, ids.benIntro, ids.ben, ids.answer, ids.well];
     expect(linkTargets(scene(), ids.ben)).toEqual(all);
-    // Цикл: з кінцевого блоку назад до Бена — дозволено, і модель це приймає.
+    // A cycle: from the final block back to Бен — allowed, and the model accepts it.
     expect(linkTargets(scene(), ids.well)).toContain(ids.ben);
     editor.run(sn, { from: { blockId: ids.well }, next: { type: "block", blockId: ids.ben } });
     expect(editor.project.scenes[sceneId]!.blocks[ids.well]!.lines[0]!.next).toEqual({ type: "block", blockId: ids.ben });

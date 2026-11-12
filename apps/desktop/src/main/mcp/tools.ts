@@ -27,18 +27,18 @@ import type { Approvals } from "./approvals";
 export type ToolContext = {
   store: ProjectStore;
   approvals: Approvals;
-  /** Кожен виклик інструмента — для індикатора агента у вікні. */
+  /** Every tool call — for the agent indicator in the window. */
   onActivity?: (tool: string) => void;
 };
 
-/** Інструкції сервера (MCP.md, 3): коротко пояснюють агенту модель. */
+/** Server instructions (MCP.md, 3): briefly explain the model to the agent. */
 export const SERVER_INSTRUCTIONS = `VNami is a branching visual-novel dialogue editor. The project consists of characters and scenes and has a lore description: read it with get_project before writing content.
 A scene is a graph of blocks. A block is one character and their lines; every line has its own output "next". One line is an ordinary dialogue step; several lines are a player choice. "next" is: null (not connected, an issue), {type:"block",blockId} (a block of the same scene), {type:"end"} (a deliberate end of the story) or {type:"scene",sceneId} (jump to the start of another scene). Branching is only possible via several lines in a block. Several outputs may lead into one block (convergence) and links may go back (cycles).
 To read a scene use get_scene with format "outline". To create a linear dialogue use add_chain, for a branching part use add_tree. Check list_issues after changes.
 Deletions run only after a human approves them in the app: if the result is "rejected" or "timeout", tell the user and do not retry without a new request from them.
 The "Автор" (Author) character always exists and is used for narration. Respect characters' description and speechStyle when writing their lines. Dialogue content is usually Ukrainian.`;
 
-// ── Спільні схеми (MCP.md, 4) ───────────────────────────────
+// ── Shared schemas (MCP.md, 4) ───────────────────────────────
 
 const Next = z
   .union([
@@ -54,7 +54,7 @@ const Output = z
 const CharacterRef = z.string().describe('Character id ("chr_…") or exact name');
 const Reason = z.string().optional().describe("Why — shown to the human in the approval request");
 
-// add_tree: рекурсивна структура (MCP.md, 5.7).
+// add_tree: recursive structure (MCP.md, 5.7).
 type TreeNodeIn = {
   label?: string;
   character: string;
@@ -83,7 +83,7 @@ const TreeNode: z.ZodType<TreeNodeIn> = z.lazy(() =>
   }),
 );
 
-// ── Відповіді ──────────────────────────────────────────────
+// ── Responses ──────────────────────────────────────────────
 
 function ok(data: Record<string, unknown>, text?: string): CallToolResult {
   return { content: [{ type: "text", text: text ?? JSON.stringify(data) }], structuredContent: data };
@@ -94,7 +94,7 @@ function fail(e: unknown): CallToolResult {
   return { isError: true, content: [{ type: "text", text: JSON.stringify(err) }] };
 }
 
-/** Регістр інструментів: обробник отримує активний проєкт або помилку NO_PROJECT_OPEN. */
+/** Tool registry: the handler gets the active project or a NO_PROJECT_OPEN error. */
 export function registerTools(server: McpServer, ctx: ToolContext) {
   const { store, approvals } = ctx;
 
@@ -149,7 +149,7 @@ export function registerTools(server: McpServer, ctx: ToolContext) {
     );
   }
 
-  /** Видалення лише після схвалення людиною (MCP.md, 5.9). */
+  /** Deletion only after human approval (MCP.md, 5.9). */
   async function approve(input: Parameters<Approvals["request"]>[0], action: () => Record<string, unknown>): Promise<CallToolResult> {
     const status = await approvals.request(input);
     if (status !== "approved") {
@@ -162,7 +162,7 @@ export function registerTools(server: McpServer, ctx: ToolContext) {
     return ok({ status, ...action(), issues: issues() });
   }
 
-  // ── 5.1 Читання ──────────────────────────────────────────
+  // ── 5.1 Reading ──────────────────────────────────────────
 
   tool("list_projects", "List all projects in the app. Only the open (active) one can be read or edited; only the human switches projects.", {}, async () => {
     const active = store.activeProject?.id ?? null;
@@ -240,7 +240,7 @@ export function registerTools(server: McpServer, ctx: ToolContext) {
     return ok({ issues: list, counts: countIssues(list) });
   }, true);
 
-  // ── 5.1a Проєкт ──────────────────────────────────────────
+  // ── 5.1a Project ─────────────────────────────────────────
 
   tool("update_project", "Change the active project's name and/or lore description.", { name: z.string().optional(), description: z.string().optional() }, (args) => {
     run("updateProject", args);
@@ -248,7 +248,7 @@ export function registerTools(server: McpServer, ctx: ToolContext) {
     return ok({ id: p.id, name: p.name, description: p.description });
   });
 
-  // ── 5.2 Персонажі ────────────────────────────────────────
+  // ── 5.2 Characters ───────────────────────────────────────
 
   tool(
     "create_character",
@@ -293,7 +293,7 @@ export function registerTools(server: McpServer, ctx: ToolContext) {
     },
   );
 
-  // ── 5.3 Сцени ────────────────────────────────────────────
+  // ── 5.3 Scenes ───────────────────────────────────────────
 
   tool("create_scene", "Create an empty scene.", { name: z.string(), description: z.string().optional() }, (args) => {
     const { sceneId } = run<{ sceneId: string }>("createScene", args);
@@ -324,7 +324,7 @@ export function registerTools(server: McpServer, ctx: ToolContext) {
     return ok({ ...getScene(project(), sceneId), issues: issues() });
   });
 
-  // ── 5.4 Блоки ────────────────────────────────────────────
+  // ── 5.4 Blocks ───────────────────────────────────────────
 
   tool(
     "add_block",
@@ -398,7 +398,7 @@ export function registerTools(server: McpServer, ctx: ToolContext) {
     },
   );
 
-  // ── 5.5 Репліки ──────────────────────────────────────────
+  // ── 5.5 Lines ────────────────────────────────────────────
 
   tool(
     "add_line",
@@ -432,14 +432,14 @@ export function registerTools(server: McpServer, ctx: ToolContext) {
     return ok({ ...blockOut(args.blockId), issues: issues() });
   });
 
-  // ── 5.6 Зв'язки ──────────────────────────────────────────
+  // ── 5.6 Links ────────────────────────────────────────────
 
   tool("set_next", "Connect, disconnect (null), mark the end ({type:\"end\"}) or jump to another scene's start for one output.", { from: Output, next: Next }, (args) => {
     const { blockId } = run<{ blockId: string }>("setNext", args);
     return ok({ ...blockOut(blockId), issues: issues() });
   });
 
-  // ── 5.7 Пакетні ──────────────────────────────────────────
+  // ── 5.7 Batch ────────────────────────────────────────────
 
   tool(
     "add_chain",
@@ -467,7 +467,7 @@ export function registerTools(server: McpServer, ctx: ToolContext) {
     },
   );
 
-  // ── 5.8 Історія ──────────────────────────────────────────
+  // ── 5.8 History ──────────────────────────────────────────
 
   tool("undo", "Undo the last change (by the human or the agent).", {}, () => ok({ undone: store.undo() }));
   tool("redo", "Redo the last undone change.", {}, () => ok({ redone: store.redo() }));

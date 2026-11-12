@@ -8,7 +8,7 @@ import { openCharacter, selectScene, useApp } from "../store/app-store";
 import { attempt } from "../store/toast";
 import { t } from "../strings/uk";
 
-/** Розділ «Персонажі»: список ліворуч, сторінка вибраного персонажа праворуч (FLOWS.md, 10). */
+/** The "Characters" section: list on the left, the selected character's page on the right (FLOWS.md, 10). */
 export function CharactersView({ project }: { project: Project }) {
   const selectedId = useApp((s) => s.characterId);
   const characterId = selectedId && project.characters[selectedId] ? selectedId : project.characterOrder[0]!;
@@ -65,7 +65,7 @@ function CharacterPage({ project, character: c }: { project: Project; character:
   const update = (patch: Partial<Pick<Character, "name" | "color" | "description" | "speechStyle">>) =>
     attempt(() => execute("updateCharacter", { characterId: c.id, ...patch }));
 
-  // У яких сценах говорить персонаж — щоб швидко перейти до його реплік.
+  // Which scenes the character speaks in — to jump to their lines quickly.
   const scenes = useMemo(
     () =>
       project.sceneOrder
@@ -77,7 +77,7 @@ function CharacterPage({ project, character: c }: { project: Project; character:
   const total = scenes.reduce((n, s) => n + s.lines, 0);
 
   const remove = () => {
-    // Без реплік — одразу (є undo), з репліками — після підтвердження (FLOWS.md, 10).
+    // Without lines — right away (there is undo); with lines — after confirmation (FLOWS.md, 10).
     if (total > 0 && !window.confirm(t.characters.deleteConfirm(c.name, total))) return;
     void attempt(() => execute("deleteCharacter", { characterId: c.id }));
   };

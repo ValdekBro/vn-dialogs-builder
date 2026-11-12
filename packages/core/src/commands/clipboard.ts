@@ -4,13 +4,13 @@ import type { Block, BlockId, Project, SceneId } from "../schema/entities";
 import { cloneBlocks } from "./scenes";
 import { defineCommand } from "./util";
 
-/** Знімок скопійованих блоків. Це звичайні дані: їх можна тримати в буфері обміну. */
+/** Snapshot of copied blocks. Plain data, so it can live in the clipboard. */
 export type BlockClipboard = {
   sourceSceneId: SceneId;
   blocks: Block[];
 };
 
-/** Копіювання не змінює проєкт, тож це запит, а не команда. Блоки — з однієї сцени. */
+/** Copying does not change the project, so this is a query, not a command. Blocks come from one scene. */
 export function copyBlocks(project: Project, blockIds: BlockId[]): BlockClipboard {
   if (blockIds.length === 0) throw invalid("blockIds must not be empty");
   const ids = [...new Set(blockIds)];
@@ -23,7 +23,7 @@ export function copyBlocks(project: Project, blockIds: BlockId[]): BlockClipboar
   return { sourceSceneId: first.scene.id, blocks };
 }
 
-/** Кореневі блоки знімка: ті, у які не веде жоден інший скопійований блок. */
+/** Root blocks of the snapshot: those no other copied block leads into. */
 export function clipboardRoots(clip: BlockClipboard): BlockId[] {
   const targets = new Set<BlockId>();
   for (const b of clip.blocks) {
@@ -35,9 +35,9 @@ export function clipboardRoots(clip: BlockClipboard): BlockId[] {
 export type PasteBlocksArgs = { sceneId: SceneId; clipboard: BlockClipboard };
 
 /**
- * Вставка: копія з новими ID з'являється окремою гілкою (FLOWS.md, 9).
- * Зв'язок на блок поза знімком зберігається, якщо такий блок є в цільовій сцені, інакше стає `null`.
- * Персонаж, якого вже немає в проєкті, стає `null`.
+ * Paste: a copy with new IDs appears as a separate branch (FLOWS.md, 9).
+ * A link to a block outside the snapshot is kept if that block exists in the target scene, otherwise it becomes `null`.
+ * A character that no longer exists in the project becomes `null`.
  */
 export const pasteBlocks = defineCommand({
   name: "pasteBlocks",

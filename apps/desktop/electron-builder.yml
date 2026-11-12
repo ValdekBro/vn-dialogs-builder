@@ -1,39 +1,39 @@
-# Пакування застосунку (ARCHITECTURE.md, розділ 1). Збірка: `pnpm dist:win`.
+# App packaging (ARCHITECTURE.md, section 1). Build: `pnpm dist:win`.
 appId: app.vnami.desktop
 productName: VNami
 copyright: VNami
 directories:
   output: release
   buildResources: build
-# Усі залежності вже вбудовані в out/ (electron.vite.config.ts), тож пакуємо лише зібрані файли.
+# All dependencies are already bundled into out/ (electron.vite.config.ts), so only built files are packaged.
 files:
   - out/**
   - package.json
-# Міст MCP для застосунку Claude запускає інший процес (VNami в режимі Node), тож скрипт — поза архівом.
+# The MCP bridge for the Claude app is started by another process (VNami in Node mode), so the script lives outside the archive.
 asarUnpack:
   - out/main/mcp-bridge.js
 npmRebuild: false
 nodeGypRebuild: false
-# Оновлення (ARCHITECTURE.md, «Оновлення»): релізи на GitHub, застосунок читає latest.yml звідти.
+# Updates (ARCHITECTURE.md, "Updates"): releases on GitHub, the app reads latest.yml from there.
 publish:
   provider: github
   owner: ValdekBro
   repo: vn-dialogs-builder
-  # CI заздалегідь створює чернетку релізу, electron-builder дозавантажує в неї файли,
-  # а останній крок workflow публікує її (.github/workflows/release.yml).
+  # CI creates a draft release up front, electron-builder uploads files into it,
+  # and the last workflow step publishes it (.github/workflows/release.yml).
   releaseType: draft
 win:
-  # Лише інсталятор: оновлюватися вміє тільки він (переносну версію прибрано).
+  # Installer only: only it can update itself (the portable build was removed).
   target:
     - target: nsis
       arch: [x64]
-  # Без Wine на macOS іконку й метадані .exe змінити не можна. CI на Windows вмикає цей крок
-  # (`--config.win.signAndEditExecutable=true` у .github/workflows/release.yml).
+  # Without Wine on macOS the .exe icon and metadata cannot be changed. CI on Windows enables this step
+  # (`--config.win.signAndEditExecutable=true` in .github/workflows/release.yml).
   signAndEditExecutable: false
-# macOS (ARCHITECTURE.md, «Оновлення»): універсальна збірка (Apple Silicon + Intel).
-# Без платного Developer ID — ad-hoc підпис: застосунок запускається, але автооновлення на Mac
-# неможливе (Squirrel.Mac вимагає того самого підпису розробника), тож застосунок лише пропонує
-# завантажити нову версію. zip потрібен для latest-mac.yml, за яким застосунок бачить нові версії.
+# macOS (ARCHITECTURE.md, "Updates"): universal build (Apple Silicon + Intel).
+# No paid Developer ID — ad-hoc signature: the app runs, but auto-update on Mac
+# is impossible (Squirrel.Mac requires the same developer signature), so the app only offers
+# to download the new version. The zip is needed for latest-mac.yml, which the app uses to see new versions.
 mac:
   target:
     - target: dmg

@@ -11,15 +11,15 @@ import { AppError, toApiError } from "../project-store/errors";
 type Handlers = { [M in ApiMethod]: (...args: ApiMethods[M][0]) => ApiMethods[M][1] | Promise<ApiMethods[M][1]> };
 
 /**
- * Міст main ↔ renderer. Один канал `vn:invoke` з назвою методу; помилки повертаються як дані,
- * бо Electron передає через `invoke` лише текст помилки й губить її код.
+ * Main ↔ renderer bridge. One `vn:invoke` channel with the method name; errors are returned as data,
+ * because Electron passes only the error text through `invoke` and loses its code.
  */
 export type IpcDeps = {
   store: ProjectStore;
   updater: Updater;
   mcp: McpHttpServer;
   approvals: Approvals;
-  /** Конфіг застосунку Claude і запис мосту для нього (src/main/mcp/claude-desktop.ts). */
+  /** The Claude app config and the bridge entry for it (src/main/mcp/claude-desktop.ts). */
   claude: { configPath: string | null; entry: StdioEntry };
 };
 

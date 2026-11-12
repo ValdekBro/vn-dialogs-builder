@@ -2,16 +2,16 @@ import { create } from "zustand";
 import type { AgentActivity, ApprovalRequest, McpInfo, SessionEvent } from "../../../shared/api";
 import { call } from "../api";
 
-/** Скільки після останнього виклику агент вважається «підключеним» (сервер без сесій). */
+/** How long after the last call the agent counts as "connected" (the server is stateless). */
 export const AGENT_ONLINE_MS = 2 * 60 * 1000;
-/** Скільки світяться блоки, змінені агентом (FLOWS.md, 14). */
+/** How long blocks changed by the agent glow (FLOWS.md, 14). */
 const AGENT_GLOW_MS = 4000;
 
 type AgentStore = {
   mcp: McpInfo | null;
   activity: AgentActivity | null;
   approval: ApprovalRequest | null;
-  /** Блоки, які агент щойно змінив: світяться кілька секунд. */
+  /** Blocks the agent just changed: they glow for a few seconds. */
   glowing: Set<string>;
   dialogOpen: boolean;
 };
@@ -39,7 +39,7 @@ function onEvent(event: SessionEvent) {
       return;
     case "changed": {
       if (event.source !== "agent") return;
-      // Шлях патча: ["scenes", sceneId, "blocks", blockId, ...] — блок, який змінив агент.
+      // Patch path: ["scenes", sceneId, "blocks", blockId, ...] — the block the agent changed.
       const ids = new Set(useAgent.getState().glowing);
       for (const p of event.patches) {
         if (p.path[0] === "scenes" && p.path[2] === "blocks" && typeof p.path[3] === "string" && p.op !== "remove") ids.add(p.path[3]);
