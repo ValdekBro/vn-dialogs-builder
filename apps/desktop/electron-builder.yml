@@ -9,6 +9,9 @@ directories:
 files:
   - out/**
   - package.json
+# Міст MCP для застосунку Claude запускає інший процес (VNami в режимі Node), тож скрипт — поза архівом.
+asarUnpack:
+  - out/main/mcp-bridge.js
 npmRebuild: false
 nodeGypRebuild: false
 # Оновлення (ARCHITECTURE.md, «Оновлення»): релізи на GitHub, застосунок читає latest.yml звідти.

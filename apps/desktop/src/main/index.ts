@@ -9,6 +9,7 @@ import { Updater } from "./updater";
 import { IPC, type SessionEvent } from "../shared/api";
 import { Approvals } from "./mcp/approvals";
 import { McpHttpServer } from "./mcp/http";
+import { bridgeEntry, claudeDesktopConfigPath } from "./mcp/claude-desktop";
 
 app.setName("VNami");
 // Інтерфейс лише в темній темі: системні елементи (меню, діалоги, скролбари) теж темні.
@@ -123,7 +124,15 @@ async function bootstrap() {
   });
   await mcp.start(settings.value.mcp.port, settings.value.mcp.token);
   if (mcp.info.error) console.error("MCP server:", mcp.info.error);
-  registerIpc({ store, updater, mcp, approvals }, () => mainWindow);
+  // Міст для застосунку Claude: скрипт лежить поза app.asar (asarUnpack в electron-builder.yml),
+  // бо його запускає інший процес — VNami в режимі Node.
+  const bridgeScript = join(__dirname, "mcp-bridge.js").replace(/app\.asar([\\/])/, "app.asar.unpacked$1");
+  const claude = {
+    // VN_CLAUDE_CONFIG — лише для тестів, щоб не чіпати справжній конфіг Claude.
+    configPath: process.env.VN_CLAUDE_CONFIG ?? claudeDesktopConfigPath(process.platform, app.getPath("home"), app.getPath("appData")),
+    entry: bridgeEntry(process.execPath, bridgeScript, join(dataDir, "settings.json")),
+  };
+  registerIpc({ store, updater, mcp, approvals, claude }, () => mainWindow);
   await store.openLastProject();
 
   mainWindow = createWindow();

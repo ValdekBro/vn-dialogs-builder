@@ -1,5 +1,7 @@
-import { Check, Copy, Eye, EyeOff, X } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import type { ClaudeDesktopStatus } from "../../../shared/api";
+import { call } from "../api";
 import { openAgentDialog, useAgent } from "../store/agent-store";
 import { t } from "../strings/uk";
 import { Tip } from "./Tip";
@@ -50,6 +52,8 @@ export function AgentDialog() {
         </div>
         <p className="mb-5 text-sm text-zinc-400">{t.agent.intro}</p>
 
+        <ClaudeDesktop />
+
         <Section label={t.agent.promptLabel}>
           <CodeBox text={prompt} shown={mask(prompt)} testId="agent-prompt" sans />
         </Section>
@@ -83,6 +87,68 @@ export function AgentDialog() {
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Застосунок Claude для комп'ютера (MCP.md, 2): він не підключається до HTTP-сервера напряму,
+ * тож кнопка записує в його конфіг міст VNami. Після цього Claude треба перезапустити.
+ */
+function ClaudeDesktop() {
+  const [status, setStatus] = useState<ClaudeDesktopStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void call("claude.status").then(setStatus, () => setStatus(null));
+  }, []);
+
+  if (!status?.supported) return null;
+  const install = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      setStatus(await call("claude.install"));
+      setDone(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const json = JSON.stringify({ mcpServers: { vnami: status.entry } }, null, 2);
+
+  return (
+    <div data-testid="claude-desktop" className="mb-5 rounded-lg border border-zinc-700 bg-zinc-800/40 p-4">
+      <div className="mb-1 text-sm font-medium text-zinc-200">{t.agent.claudeDesktop.title}</div>
+      <p className="mb-3 text-xs text-zinc-400">{t.agent.claudeDesktop.hint}</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void install()}
+          className="flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-60"
+        >
+          {busy && <Loader2 size={14} className="animate-spin" />}
+          {status.connected ? t.agent.claudeDesktop.reconnect : t.agent.claudeDesktop.connect}
+        </button>
+        {status.connected && !done && (
+          <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+            <Check size={14} /> {t.agent.claudeDesktop.connected}
+          </span>
+        )}
+        {!status.found && !done && <span className="text-xs text-amber-400">{t.agent.claudeDesktop.notFound}</span>}
+      </div>
+      {done && <p className="mt-3 text-xs text-emerald-400">{t.agent.claudeDesktop.done}</p>}
+      {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+      <details className="mt-3 text-xs text-zinc-400">
+        <summary className="cursor-pointer select-none hover:text-zinc-200">{t.agent.claudeDesktop.manual}</summary>
+        <p className="my-2 break-all">{t.agent.claudeDesktop.manualHint(status.configPath ?? "")}</p>
+        <CodeBox text={json} shown={json} />
+      </details>
+      <p className="mt-3 text-xs text-zinc-500">{t.agent.claudeDesktop.webNote}</p>
     </div>
   );
 }

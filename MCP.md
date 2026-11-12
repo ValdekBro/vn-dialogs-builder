@@ -38,7 +38,32 @@ claude mcp add --transport http vnami http://127.0.0.1:47821/mcp --header "Autho
 - MCP доступний лише поки застосунок запущений.
 - Сервер без сесій (stateless): кожен POST на `/mcp` обробляється окремо, відповіді — JSON (`enableJsonResponse`). Тож «підключеність» агента застосунок визначає за останнім викликом (2 хв).
 - Приймаються лише запити з `Host` 127.0.0.1 / localhost (захист від DNS rebinding).
-- Код: `apps/desktop/src/main/mcp/` — `http.ts` (сервер і токен), `tools.ts` (інструменти й інструкції), `approvals.ts` (черга підтверджень).
+- Код: `apps/desktop/src/main/mcp/` — `http.ts` (сервер і токен), `tools.ts` (інструменти й інструкції), `approvals.ts` (черга підтверджень), `bridge.ts` і `claude-desktop.ts` (міст для застосунку Claude).
+
+### 2a. Застосунок Claude (не Claude Code)
+
+Застосунок Claude для комп'ютера підключає з `claude_desktop_config.json` лише локальні stdio-сервери, а HTTP-адресу з токеном не приймає. Конектори в налаштуваннях Claude і claude.ai працюють із серверів Anthropic і до `127.0.0.1` не дістають — для них підключення неможливе.
+
+Тому VNami має **міст stdio ↔ HTTP** (`bridge.ts`, збирається окремим файлом `out/main/mcp-bridge.js`, у пакеті — поза `app.asar` через `asarUnpack`):
+
+```json
+{
+  "mcpServers": {
+    "vnami": {
+      "command": "<шлях до виконуваного файлу VNami>",
+      "args": ["<…>/app.asar.unpacked/out/main/mcp-bridge.js", "<userData>/settings.json"],
+      "env": { "ELECTRON_RUN_AS_NODE": "1" }
+    }
+  }
+}
+```
+
+- Claude запускає сам виконуваний файл VNami в режимі Node, тож Node.js у користувача не потрібен.
+- Кожне JSON-RPC повідомлення зі stdin міст пересилає POST-ом на `/mcp`, відповідь пише в stdout. Порт і токен він щоразу читає з `settings.json`, тож токена в конфігу Claude немає.
+- VNami закрита — запит отримує помилку `-32000` «VNami is not running…», а не зависає; неправильний токен — окрема зрозуміла помилка.
+- Кнопка «Підключити до Claude» в діалозі «Підключити AI-агента» дописує запис `vnami` у конфіг Claude (macOS: `~/Library/Application Support/Claude/`, Windows: `%APPDATA%\Claude\`), не чіпаючи решту. Пошкоджений JSON не перезаписується — показується помилка. Після цього Claude треба повністю перезапустити.
+- Якщо VNami перенесли в іншу папку (наприклад, запустили з `.dmg`, а потім скопіювали в «Програми»), шлях у конфігу застаріє — натисніть кнопку ще раз.
+- Для тестів шлях до конфігу Claude можна підмінити змінною `VN_CLAUDE_CONFIG`.
 
 ## 3. Інструкції сервера
 

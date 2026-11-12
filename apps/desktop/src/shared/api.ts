@@ -78,6 +78,21 @@ export type McpInfo = {
   error: string | null;
 };
 
+/**
+ * Підключення до застосунку Claude для комп'ютера (MCP.md, 2): він уміє лише локальні
+ * stdio-сервери, тож VNami записує в його конфіг міст (`entry`).
+ */
+export type ClaudeDesktopStatus = {
+  /** На цій ОС застосунок Claude є (macOS, Windows). */
+  supported: boolean;
+  /** Claude встановлений (є його папка з налаштуваннями). */
+  found: boolean;
+  /** У конфігу Claude вже є саме цей запис `vnami`. */
+  connected: boolean;
+  configPath: string | null;
+  entry: { command: string; args: string[]; env: Record<string, string> };
+};
+
 /** Остання дія агента — для індикатора у верхній панелі. */
 export type AgentActivity = { tool: string; at: number };
 
@@ -165,6 +180,9 @@ export type ApiMethods = {
   /** Завантажити, встановити й перезапуститися — кнопка «Оновити». */
   "update.install": [[], void];
   "mcp.info": [[], McpInfo];
+  "claude.status": [[], ClaudeDesktopStatus];
+  /** Записати VNami в конфіг застосунку Claude (кнопка «Підключити до Claude»). */
+  "claude.install": [[], ClaudeDesktopStatus];
   /** Поточний запит на підтвердження (якщо вікно відкрилось, поки він чекав). */
   "approval.current": [[], ApprovalRequest | null];
   "approval.respond": [[id: string, approved: boolean], void];

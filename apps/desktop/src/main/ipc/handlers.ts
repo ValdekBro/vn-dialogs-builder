@@ -4,6 +4,7 @@ import type { ProjectStore } from "../project-store/project-store";
 import { RELEASES_URL, type Updater } from "../updater";
 import type { Approvals } from "../mcp/approvals";
 import type { McpHttpServer } from "../mcp/http";
+import { claudeDesktopStatus, installClaudeDesktop, type StdioEntry } from "../mcp/claude-desktop";
 import { app } from "electron";
 import { AppError, toApiError } from "../project-store/errors";
 
@@ -13,9 +14,16 @@ type Handlers = { [M in ApiMethod]: (...args: ApiMethods[M][0]) => ApiMethods[M]
  * Міст main ↔ renderer. Один канал `vn:invoke` з назвою методу; помилки повертаються як дані,
  * бо Electron передає через `invoke` лише текст помилки й губить її код.
  */
-export type IpcDeps = { store: ProjectStore; updater: Updater; mcp: McpHttpServer; approvals: Approvals };
+export type IpcDeps = {
+  store: ProjectStore;
+  updater: Updater;
+  mcp: McpHttpServer;
+  approvals: Approvals;
+  /** Конфіг застосунку Claude і запис мосту для нього (src/main/mcp/claude-desktop.ts). */
+  claude: { configPath: string | null; entry: StdioEntry };
+};
 
-export function registerIpc({ store, updater, mcp, approvals }: IpcDeps, getWindow: () => BrowserWindow | null): () => void {
+export function registerIpc({ store, updater, mcp, approvals, claude }: IpcDeps, getWindow: () => BrowserWindow | null): () => void {
   const handlers: Handlers = {
     "projects.list": () => store.listProjects(),
     "projects.create": (name) => store.createProject(name),
@@ -32,6 +40,12 @@ export function registerIpc({ store, updater, mcp, approvals }: IpcDeps, getWind
     "update.check": () => updater.check(true),
     "update.install": () => updater.install(),
     "mcp.info": () => mcp.info,
+    "claude.status": () => claudeDesktopStatus(claude.configPath, claude.entry),
+    "claude.install": async () => {
+      if (!claude.configPath) throw new AppError("UNSUPPORTED", "Застосунок Claude для комп'ютера є лише на macOS і Windows");
+      await installClaudeDesktop(claude.configPath, claude.entry);
+      return claudeDesktopStatus(claude.configPath, claude.entry);
+    },
     "approval.current": () => approvals.current,
     "approval.respond": (id, approved) => approvals.respond(id, approved),
   };
