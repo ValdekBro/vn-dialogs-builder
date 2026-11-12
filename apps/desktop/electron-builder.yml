@@ -30,22 +30,23 @@ win:
   # Without Wine on macOS the .exe icon and metadata cannot be changed. CI on Windows enables this step
   # (`--config.win.signAndEditExecutable=true` in .github/workflows/release.yml).
   signAndEditExecutable: false
-# macOS (ARCHITECTURE.md, "Updates"): universal build (Apple Silicon + Intel).
+# macOS (ARCHITECTURE.md, "Updates"): separate Apple Silicon and Intel builds. A universal build
+# carries two copies of Electron and is twice the size.
 # No paid Developer ID — ad-hoc signature: the app runs, but auto-update on Mac
 # is impossible (Squirrel.Mac requires the same developer signature), so the app only offers
 # to download the new version. The zip is needed for latest-mac.yml, which the app uses to see new versions.
 mac:
   target:
     - target: dmg
-      arch: [universal]
+      arch: [arm64, x64]
     - target: zip
-      arch: [universal]
+      arch: [arm64, x64]
   category: public.app-category.developer-tools
   identity: "-"
   hardenedRuntime: false
-  artifactName: VNami-${version}-mac.${ext}
+  artifactName: VNami-${version}-mac-${arch}.${ext}
 dmg:
-  artifactName: VNami-${version}-mac.${ext}
+  artifactName: VNami-${version}-mac-${arch}.${ext}
 nsis:
   oneClick: false
   perMachine: false

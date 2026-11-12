@@ -2,11 +2,11 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getAuthor, parseProjectFile, sequentialIds } from "@vn/core";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEvent } from "../src/shared/api";
 import { ProjectRepository } from "../src/main/persistence/project-repository";
 import { SettingsStore } from "../src/main/persistence/settings";
-import { ProjectStore } from "../src/main/project-store/project-store";
+import { exportFileName, fileDialogDir, ProjectStore } from "../src/main/project-store/project-store";
 import { toApiError } from "../src/main/project-store/errors";
 
 let dir: string;
@@ -153,6 +153,40 @@ describe("ProjectStore", () => {
     expect((await repo.load(b.id)).name).toBe("Зима в Заліссі, частина 2");
   });
 
+  it("the project list shows the open project's unsaved name, and follows agent renames and undo", async () => {
+    const { store, events } = await makeStore();
+    const a = await store.createProject("Літо в Заліссі");
+    await store.openProject(a.id);
+    const lastListedName = () => {
+      const e = events.findLast((x) => x.type === "projects");
+      return e?.type === "projects" ? e.projects.find((p) => p.id === a.id)?.name : undefined;
+    };
+
+    // Autosave is off here, so the file still has the old name.
+    store.execute("updateProject", { name: "Останній трамвай" }, "agent");
+    expect((await store.listProjects()).find((p) => p.id === a.id)?.name).toBe("Останній трамвай");
+    await vi.waitFor(() => expect(lastListedName()).toBe("Останній трамвай"));
+
+    store.undo();
+    await vi.waitFor(() => expect(lastListedName()).toBe("Літо в Заліссі"));
+  });
+
+  it("remembers the last scene of each project across restarts, and forgets it with the project", async () => {
+    const { store, settings, repo } = await makeStore();
+    const a = await store.createProject("Ранок у селі");
+    await store.openProject(a.id);
+    expect(store.snapshot()!.lastSceneId).toBeNull();
+    const { sceneId: well } = store.execute("createScene", { name: "Біля криниці" }, "user") as { sceneId: string };
+    await store.rememberScene(well);
+    await store.rememberScene("scn_gone12345"); // a scene that does not exist is ignored
+    await store.flush();
+
+    const restarted = new ProjectStore({ repo, settings, autosaveMs: 0 });
+    expect((await restarted.openLastProject())?.lastSceneId).toBe(well);
+    await restarted.deleteProject(a.id);
+    expect(settings.value.lastScenes).toEqual({});
+  });
+
   it("deleting the active project closes it and forgets it as last", async () => {
     const { store, settings, events } = await makeStore();
     const a = await store.createProject("Літо в Заліссі");
@@ -186,5 +220,78 @@ describe("ProjectStore", () => {
     } catch (e) {
       expect(toApiError(e)).toMatchObject({ code: "INVALID_ARGUMENT" });
     }
+  });
+
+  it("exports the open project and imports it as a new project that opens right away", async () => {
+    const { store, repo } = await makeStore();
+    const a = await store.createProject("Ранок у селі");
+    await store.openProject(a.id);
+    const sceneId = store.activeProject!.sceneOrder[0]!;
+
+    store.execute("createCharacter", { name: "Татко" }, "user");
+    // A block with an unconnected output is an error, so export is blocked.
+    store.execute("addTree", { sceneId, root: { character: "Автор", text: "[Ранок. Татко вже порається біля хати]" } }, "user");
+    try {
+      store.exportActive("9.9.9");
+      expect.unreachable();
+    } catch (e) {
+      expect(toApiError(e)).toMatchObject({ code: "EXPORT_BLOCKED", details: { errors: 1 } });
+    }
+    store.undo();
+    store.execute(
+      "addTree",
+      {
+        sceneId,
+        root: {
+          character: "Автор",
+          text: "[Ранок. Татко вже порається біля хати]",
+          next: { character: "Татко", text: "Вставай, ГГ, сонце вже високо!", next: { end: true } },
+        },
+      },
+      "user",
+    );
+
+    const { name, text } = store.exportActive("9.9.9");
+    expect(name).toBe("Ранок у селі");
+    expect(JSON.parse(text)).toMatchObject({ format: "vn-dialogs-builder.export", version: 1, project: { name: "Ранок у селі" } });
+
+    const snapshot = await store.importProject(text);
+    expect(snapshot.project.id).not.toBe(a.id);
+    expect(store.activeProject!.id).toBe(snapshot.project.id);
+    // The original is still in the list, so the import gets a suffix to tell them apart.
+    expect(snapshot.project.name).toBe("Ранок у селі (імпорт)");
+    const lines = Object.values(snapshot.project.scenes[sceneId]!.blocks).flatMap((b) => b.lines.map((l) => l.text));
+    expect(lines.sort()).toEqual(["[Ранок. Татко вже порається біля хати]", "Вставай, ГГ, сонце вже високо!"].sort());
+    expect((await repo.list()).length).toBe(2);
+    expect((await store.importProject(text)).project.name).toBe("Ранок у селі (імпорт 2)");
+  });
+
+  it("reports why an import failed", async () => {
+    const { store, repo } = await makeStore();
+    const codeOf = async (text: string) => {
+      try {
+        await store.importProject(text);
+        return "ok";
+      } catch (e) {
+        return toApiError(e).code;
+      }
+    };
+    expect(await codeOf("{ це не json")).toBe("IMPORT_NOT_JSON");
+    expect(await codeOf(JSON.stringify({ format: "something-else", version: 1 }))).toBe("IMPORT_UNKNOWN_FORMAT");
+    expect(await codeOf(JSON.stringify({ format: "vn-dialogs-builder.export", version: 999 }))).toBe("IMPORT_TOO_NEW");
+    expect(await codeOf(JSON.stringify({ format: "vn-dialogs-builder.export", version: 1, scenes: "не масив" }))).toBe("IMPORT_INVALID");
+    expect(await repo.list()).toEqual([]);
+  });
+
+  it("starts file dialogs in the last export folder while it exists", async () => {
+    expect(fileDialogDir(null, "/docs")).toBe("/docs");
+    expect(fileDialogDir(dir, "/docs")).toBe(dir);
+    expect(fileDialogDir(join(dir, "видалена папка"), "/docs")).toBe("/docs");
+  });
+
+  it("makes a safe file name from the project name", () => {
+    expect(exportFileName("Останній трамвай")).toBe("Останній трамвай");
+    expect(exportFileName('Глава 1: "Ранок" / чернетка?')).toBe("Глава 1_ _Ранок_ _ чернетка_");
+    expect(exportFileName("  ...  ")).toBe("project");
   });
 });

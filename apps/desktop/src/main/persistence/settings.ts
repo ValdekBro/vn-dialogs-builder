@@ -21,6 +21,10 @@ export const Settings = z.object({
   approvalTimeoutSec: z.number().int().min(5).max(3600).default(120),
   /** The AI picked in "Connect an AI agent": the dialog then shows only its instructions. */
   agentClient: z.enum(AGENT_CLIENTS).nullable().default(null),
+  /** The folder of the last JSON export: the next "Save as" (and "Open" for import) starts there. */
+  lastExportDir: z.string().nullable().default(null),
+  /** The scene that was open last in each project: projectId → sceneId. */
+  lastScenes: z.record(z.string(), z.string()).default({}),
 });
 
 export type Settings = z.infer<typeof Settings> & { mcp: { token: string } };

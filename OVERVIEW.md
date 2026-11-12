@@ -129,7 +129,7 @@ The full specification is in [MCP.md](MCP.md).
 - A new version shows a banner "Version X available · What's new · **Update**". The button downloads the update (with progress), flushes the project, silently installs and restarts the app. The banner can be closed — it reminds again on the next launch.
 - At the bottom of the Projects screen: the app version and "Check for updates".
 - **Windows:** full auto-update via the installer. There is no portable build.
-- **macOS:** a universal build (`.dmg`, Apple Silicon + Intel). Without a paid Developer ID ($99/year) the app cannot install an update by itself: Squirrel.Mac checks that the new version is signed by the same developer, and an ad-hoc signature does not provide that. So on Mac the app also checks for new versions, but the button is **"Download"**: it opens the release page, and the `.dmg` is dragged into Applications over the old version. First launch: "System Settings → Privacy & Security → Open Anyway".
+- **macOS:** two builds, `.dmg` for Apple Silicon (`mac-arm64`) and for Intel (`mac-x64`); each is half the size of a universal build. Without a paid Developer ID ($99/year) the app cannot install an update by itself: Squirrel.Mac checks that the new version is signed by the same developer, and an ad-hoc signature does not provide that. So on Mac the app also checks for new versions, but the button is **"Download"**: it opens the release page, and the `.dmg` is dragged into Applications over the old version. First launch: "System Settings → Privacy & Security → Open Anyway".
 - How to release a version — [ARCHITECTURE.md](ARCHITECTURE.md), "Updates".
 
 ## 6. Post-MVP
@@ -192,3 +192,6 @@ The full specification is in [MCP.md](MCP.md).
    1. ~~Updates (5.10)~~ — done.
    2. ~~Dialogue simulation as a chat with option choice and autoplay (5.9)~~ — done.
    3. ~~MCP server and connection guide (5.8)~~ — done.
+   4. ~~JSON export and import in the app (5.7)~~ — done.
+   5. ~~E2E infrastructure (Playwright, `VN_E2E` test mode, manual CI run) and the key scenarios~~ — done. The remaining scenarios from TESTING.md, section 5 — next.
+   6. ~~Split the macOS build into two (Apple Silicon and Intel)~~ — done.

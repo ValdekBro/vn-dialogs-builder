@@ -33,5 +33,7 @@ describe("settings", () => {
     const s = await new SettingsStore(path).load();
     expect(s.mcp.token).toBe("old-token-0123456789abcdef");
     expect(s.agentClient).toBeNull();
+    expect(s.lastExportDir).toBeNull();
+    expect(s.lastScenes).toEqual({});
   });
 });

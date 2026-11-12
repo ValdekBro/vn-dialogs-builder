@@ -154,13 +154,13 @@ pnpm dist:win
 - **Source:** GitHub Releases of the public repository `ValdekBro/vn-dialogs-builder` (`publish` in `electron-builder.yml`). A release contains `VNami-Setup-X.Y.Z.exe`, `.blockmap` and `latest.yml` with the version number. Free.
 - **In the app:** `src/main/updater.ts` on `electron-updater`. Checks 5 s after launch and every 4 h; `autoDownload` is off. The state (`UpdateState` in `shared/api.ts`) reaches the window as an `update` event; the window shows a banner (`UpdateBanner`) and a "Check for updates" button on the Projects screen. "Update" → download → `store.dispose()` (flush) → `quitAndInstall` (silent install and restart). A background check without internet shows nothing.
 - **Windows** — the full cycle (download and install). **macOS** — check only (`Updater.downloadOnly`): state `available` with `manual: true`, and the "Download" button opens the release page. Reason: Squirrel.Mac installs an update only if it is signed with the same Developer ID, and we have an ad-hoc signature (`mac.identity: "-"`, `hardenedRuntime: false` in `electron-builder.yml`). With a Developer ID it is enough to remove `downloadOnly` and add signing and notarization in CI. In `dev` and on Linux the state is `unsupported`.
-- The Mac build is universal (`--universal`): `VNami-X.Y.Z-mac.dmg` for people, and `VNami-X.Y.Z-mac.zip` + `latest-mac.yml`, which the app uses to see new versions. Locally: `pnpm dist:mac`.
+- Mac has two builds (`--arm64 --x64`; a universal one would carry two copies of Electron): `VNami-X.Y.Z-mac-arm64.dmg` and `VNami-X.Y.Z-mac-x64.dmg` for people, and the matching `.zip` files + `latest-mac.yml`, which the app uses to see new versions. Locally: `pnpm dist:mac`.
 - **Releasing a version:**
   1. Add a `## [0.2.0] — <date>` section to `CHANGELOG.md`: what is new, what changed, what was fixed — for users, not developers. This text becomes the GitHub release notes. Commit.
   2. `pnpm release 0.2.0` (the script refuses without the CHANGELOG section) — bumps the version in `package.json` (root and `apps/desktop`), commits, tags `v0.2.0` and pushes.
   3. GitHub Actions (`.github/workflows/release.yml`):
      - `prepare` (Linux): the tag matches the version, typecheck and tests, a draft release (`gh release create --draft`);
-     - `build` — in parallel `windows-latest` (installer with `.exe` icon and metadata; Windows has rcedit) and `macos-latest` (universal `.dmg` + `.zip`); electron-builder uploads the files into the draft (`--publish always`, `GITHUB_TOKEN`);
+     - `build` — in parallel `windows-latest` (installer with `.exe` icon and metadata; Windows has rcedit) and `macos-latest` (`.dmg` + `.zip` for arm64 and x64); electron-builder uploads the files into the draft (`--publish always`, `GITHUB_TOKEN`);
      - `publish`: the draft becomes a published release.
      The draft is created once up front, so parallel uploads do not create several releases for the same tag.
   4. CI takes the release notes from `CHANGELOG.md` (`scripts/changelog.mjs`). The "What's new" link in the app leads to the release page.

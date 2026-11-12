@@ -4,6 +4,24 @@ Changes in every version. The GitHub release notes are taken from here automatic
 (the `## [X.Y.Z]` section), so add the new version's section before `pnpm release X.Y.Z`.
 Written for people who use the app: what is new, what changed, what was fixed.
 
+## [1.0.0] — 2026-11-12
+
+The first stable version: dialogues can now leave VNami as JSON files.
+
+### New
+- **Export and import JSON.** The export button in the top bar saves the project to a `.json` file you can take into your engine or share; the next export (and import) starts in the folder you used last. While the project has errors the button is greyed out and a click shows the list of what to fix. "Import from JSON" on the Projects screen creates a new project from such a file and opens it; if a project with that name already exists, the new one gets "(імпорт)" added to its name.
+
+### Changed
+- **Smaller Mac download.** Instead of one universal app there are now two: `mac-arm64` for Apple Silicon (M1 and newer) and `mac-x64` for Intel Macs. Each is about half the size.
+
+### Fixed
+- The app now reopens the scene you were working on, not the first one — after a restart and when switching projects.
+- The project switcher in the top bar showed the old name after a project was renamed (especially by the AI agent or with undo).
+
+### Installing
+- **Windows:** the app updates itself — press "Update" in the banner.
+- **Mac:** press "Download" in the banner, take the `.dmg` for your Mac (`mac-arm64` for M1 and newer, `mac-x64` for Intel; "About This Mac" shows which) and drag VNami into Applications over the old version. Your projects stay.
+
 ## [0.4.0] — 2026-11-12
 
 ### New

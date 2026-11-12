@@ -15,6 +15,9 @@ app.setName("VNami");
 // The UI is dark-only: system elements (menus, dialogs, scrollbars) are dark too.
 nativeTheme.themeSource = "dark";
 
+/** Test mode for E2E (TESTING.md, section 3). */
+const e2e = process.env.VN_E2E === "1";
+
 // The data folder can be overridden with an environment variable (a separate folder for tests and experiments).
 const userDataOverride = process.env.VN_USER_DATA_DIR;
 if (userDataOverride) app.setPath("userData", userDataOverride);
@@ -59,12 +62,16 @@ function createWindow(): BrowserWindow {
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
+      additionalArguments: e2e ? ["--vn-e2e"] : [],
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
     },
   });
-  win.on("ready-to-show", () => win.show());
+  // VN_E2E_HIDDEN: background E2E runs; the window renders fully but is not shown.
+  if (!(e2e && process.env.VN_E2E_HIDDEN === "1")) win.on("ready-to-show", () => win.show());
+  // No transitions in tests, so clicks land where the element ends up.
+  if (e2e) win.webContents.on("did-finish-load", () => void win.webContents.insertCSS("*,*::before,*::after{transition:none!important;animation:none!important}"));
   // External links open in the browser, not in the app window.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url);
@@ -88,7 +95,8 @@ async function bootstrap() {
     trash: (path) => shell.trashItem(path),
   });
   await repo.init();
-  store = new ProjectStore({ repo, settings });
+  // In tests autosave runs right after a change, so a restart finds everything on disk.
+  store = new ProjectStore({ repo, settings, autosaveMs: e2e ? 50 : undefined });
   const projectStore = store;
   const send = (event: SessionEvent) => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(IPC.event, event);
@@ -104,7 +112,7 @@ async function bootstrap() {
   // MCP (MCP.md): the agent works on the open project; deletions only after human approval.
   approvals = new Approvals({
     enabled: () => settings.value.confirmAgentDeletes,
-    timeoutSec: () => settings.value.approvalTimeoutSec,
+    timeoutSec: () => (e2e && process.env.VN_E2E_APPROVAL_SEC ? Number(process.env.VN_E2E_APPROVAL_SEC) : settings.value.approvalTimeoutSec),
     onShow: (request) => {
       send({ type: "approval", request });
       // The human must see the request even if the window is minimized.
@@ -122,7 +130,9 @@ async function bootstrap() {
     onActivity: (tool) => send({ type: "agent", activity: { tool, at: Date.now() } }),
     onStatus: (info) => send({ type: "mcp", mcp: info }),
   });
-  await mcp.start(settings.value.mcp.port, settings.value.mcp.token);
+  // Tests run in parallel, so each app takes a random free port; the test reads it from __vnE2E.
+  await mcp.start(e2e ? 0 : settings.value.mcp.port, settings.value.mcp.token);
+  if (e2e) (globalThis as { __vnE2E?: unknown }).__vnE2E = { mcp: () => mcp?.info };
   if (mcp.info.error) console.error("MCP server:", mcp.info.error);
   // Bridge for the Claude app: the script lives outside app.asar (asarUnpack in electron-builder.yml),
   // because another process runs it — VNami in Node mode.
@@ -139,7 +149,7 @@ async function bootstrap() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
-  void updater.start().catch((e) => console.error("Updater failed to start", e));
+  if (!e2e) void updater.start().catch((e) => console.error("Updater failed to start", e));
 }
 
 app.whenReady().then(bootstrap, (e) => {

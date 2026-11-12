@@ -1,4 +1,15 @@
-import { ProjectEditor, type ChangeEvent, type ChangeSource, type Project } from "@vn/core";
+import { existsSync } from "node:fs";
+import {
+  ExportBlockedError,
+  ExportFormatError,
+  ImportError,
+  ProjectEditor,
+  serializeExport,
+  toExport,
+  type ChangeEvent,
+  type ChangeSource,
+  type Project,
+} from "@vn/core";
 import type { CommandName, HistoryState, ProjectSummary, SaveState, SessionEvent, SessionSnapshot } from "../../shared/api";
 import type { ProjectRepository } from "../persistence/project-repository";
 import type { SettingsStore } from "../persistence/settings";
@@ -23,6 +34,8 @@ export class ProjectStore {
   #settings: SettingsStore;
   #editor: ProjectEditor | null = null;
   #unsubscribe: (() => void) | null = null;
+  /** Name, description and scene count of the open project as last broadcast in the project list. */
+  #summaryKey = "";
   #version = 0;
   #dirty = false;
   #save: SaveState = "saved";
@@ -55,13 +68,24 @@ export class ProjectStore {
 
   snapshot(): SessionSnapshot | null {
     if (!this.#editor) return null;
-    return { project: this.#editor.project, version: this.#version, history: this.#history(), save: this.#save };
+    const project = this.#editor.project;
+    return {
+      project,
+      lastSceneId: this.#settings.value.lastScenes[project.id] ?? null,
+      version: this.#version,
+      history: this.#history(),
+      save: this.#save,
+    };
   }
 
   // ── Projects ──────────────────────────────────────────────
 
-  listProjects(): Promise<ProjectSummary[]> {
-    return this.#repo.list();
+  /** Projects on disk, with the open project's name, description and scene count taken from memory (it may not be saved yet). */
+  async listProjects(): Promise<ProjectSummary[]> {
+    const list = await this.#repo.list();
+    const live = this.#editor?.project;
+    if (!live) return list;
+    return list.map((p) => (p.id === live.id ? { ...p, name: live.name, description: live.description, sceneCount: live.sceneOrder.length } : p));
   }
 
   async createProject(name: string): Promise<ProjectSummary> {
@@ -79,6 +103,7 @@ export class ProjectStore {
     this.#version = 0;
     this.#dirty = false;
     this.#setSave("saved");
+    this.#summaryKey = summaryKey(project);
     this.#unsubscribe = editor.subscribe((e) => this.#onChange(e));
     await this.#settings.update({ lastProjectId: id });
     const snapshot = this.snapshot()!;
@@ -97,15 +122,25 @@ export class ProjectStore {
     }
   }
 
+  /** Remembers the scene the window shows in the open project (opened again on the next open). */
+  async rememberScene(sceneId: string): Promise<void> {
+    const project = this.#requireEditor().project;
+    if (!project.scenes[sceneId] || this.#settings.value.lastScenes[project.id] === sceneId) return;
+    await this.#settings.update({ lastScenes: { ...this.#settings.value.lastScenes, [project.id]: sceneId } });
+  }
+
   async closeProject(): Promise<void> {
     await this.#closeEditor();
     this.#emit({ type: "closed" });
   }
 
   async renameProject(id: string, name: string): Promise<void> {
+    // The open project goes through history; the change itself broadcasts the list.
     if (this.#editor?.project.id === id) this.execute("updateProject", { name }, "user");
-    else await this.#repo.rename(id, name);
-    await this.#broadcastProjects();
+    else {
+      await this.#repo.rename(id, name);
+      await this.#broadcastProjects();
+    }
   }
 
   async duplicateProject(id: string): Promise<ProjectSummary> {
@@ -119,7 +154,48 @@ export class ProjectStore {
     if (this.#editor?.project.id === id) await this.closeProject();
     await this.#repo.delete(id);
     if (this.#settings.value.lastProjectId === id) await this.#settings.update({ lastProjectId: null });
+    if (id in this.#settings.value.lastScenes) {
+      const { [id]: _gone, ...rest } = this.#settings.value.lastScenes;
+      await this.#settings.update({ lastScenes: rest });
+    }
     await this.#broadcastProjects();
+  }
+
+  // ── Export and import (SCHEMA.md, section 8) ──────────────
+
+  /** The open project as export file text. Blocked while the project has errors (`EXPORT_BLOCKED`). */
+  exportActive(appVersion: string): { name: string; text: string } {
+    const project = this.#requireEditor().project;
+    try {
+      return { name: project.name, text: serializeExport(toExport(project, { appVersion })) };
+    } catch (e) {
+      if (e instanceof ExportBlockedError) {
+        throw new AppError("EXPORT_BLOCKED", e.message, { errors: e.issues.length });
+      }
+      throw e;
+    }
+  }
+
+  /** Creates a new project from export file text and opens it. */
+  async importProject(text: string): Promise<SessionSnapshot> {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(text);
+    } catch {
+      throw new AppError("IMPORT_NOT_JSON", "The file is not JSON");
+    }
+    let project: Project;
+    try {
+      project = await this.#repo.importExport(raw);
+    } catch (e) {
+      if (e instanceof ExportFormatError) {
+        throw new AppError(e.kind === "too_new" ? "IMPORT_TOO_NEW" : "IMPORT_UNKNOWN_FORMAT", e.message);
+      }
+      if (e instanceof ImportError) throw new AppError("IMPORT_INVALID", e.message, e.details);
+      throw e;
+    }
+    await this.#broadcastProjects();
+    return this.openProject(project.id);
   }
 
   // ── Model changes ─────────────────────────────────────────
@@ -184,6 +260,12 @@ export class ProjectStore {
       patches: e.patches,
       history: this.#history(),
     });
+    // A rename (by the user, the agent or undo) must reach the project list right away, not after autosave.
+    const key = summaryKey(this.#editor?.project);
+    if (key !== this.#summaryKey) {
+      this.#summaryKey = key;
+      void this.#broadcastProjects();
+    }
   }
 
   async #closeEditor() {
@@ -216,7 +298,7 @@ export class ProjectStore {
   }
 
   async #broadcastProjects() {
-    this.#emit({ type: "projects", projects: await this.#repo.list() });
+    this.#emit({ type: "projects", projects: await this.listProjects() });
   }
 
   #emit(event: SessionEvent) {
@@ -224,6 +306,21 @@ export class ProjectStore {
   }
 }
 
+function summaryKey(p: Project | undefined): string {
+  return p ? JSON.stringify([p.name, p.description, p.sceneOrder.length]) : "";
+}
+
 function summaryOf(p: Project): ProjectSummary {
   return { id: p.id, name: p.name, description: p.description, sceneCount: p.sceneOrder.length, updatedAt: Date.now() };
+}
+
+/** A file name from the project name: characters forbidden on Windows or macOS are replaced. */
+export function exportFileName(projectName: string): string {
+  const cleaned = projectName.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").replace(/\s+/g, " ").trim().replace(/^\.+/, "");
+  return cleaned.slice(0, 100) || "project";
+}
+
+/** Where the export and import dialogs start: the last export folder if it still exists, otherwise `fallback`. */
+export function fileDialogDir(lastExportDir: string | null, fallback: string): string {
+  return lastExportDir && existsSync(lastExportDir) ? lastExportDir : fallback;
 }

@@ -5,3 +5,5 @@ coverage/
 *.log
 .DS_Store
 release/
+apps/desktop/e2e-results/
+apps/desktop/playwright-report/

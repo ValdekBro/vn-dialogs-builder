@@ -1,4 +1,6 @@
-import { ipcMain, type BrowserWindow } from "electron";
+import { readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { dialog, ipcMain, type BrowserWindow } from "electron";
 import { IPC, type ApiMethod, type ApiMethods, type ApiResult } from "../../shared/api";
 import type { ProjectStore } from "../project-store/project-store";
 import { RELEASES_URL, type Updater } from "../updater";
@@ -8,6 +10,7 @@ import type { SettingsStore } from "../persistence/settings";
 import { claudeDesktopStatus, installClaudeDesktop, type StdioEntry } from "../mcp/claude-desktop";
 import { app } from "electron";
 import { AppError, toApiError } from "../project-store/errors";
+import { exportFileName, fileDialogDir } from "../project-store/project-store";
 
 type Handlers = { [M in ApiMethod]: (...args: ApiMethods[M][0]) => ApiMethods[M][1] | Promise<ApiMethods[M][1]> };
 
@@ -34,7 +37,37 @@ export function registerIpc({ store, updater, mcp, approvals, settings, claude }
     "projects.rename": (id, name) => store.renameProject(id, name),
     "projects.duplicate": (id) => store.duplicateProject(id),
     "projects.delete": (id) => store.deleteProject(id),
+    "projects.export": async () => {
+      // Errors block export before the dialog opens, so the user does not pick a file for nothing.
+      const { name, text } = store.exportActive(app.getVersion());
+      const win = getWindow();
+      const options: Electron.SaveDialogOptions = {
+        title: "Експорт у JSON",
+        defaultPath: join(fileDialogDir(settings.value.lastExportDir, app.getPath("documents")), `${exportFileName(name)}.json`),
+        filters: [{ name: "JSON", extensions: ["json"] }],
+      };
+      const result = win ? await dialog.showSaveDialog(win, options) : await dialog.showSaveDialog(options);
+      if (result.canceled || !result.filePath) return null;
+      await writeFile(result.filePath, text, "utf8");
+      await settings.update({ lastExportDir: dirname(result.filePath) });
+      return result.filePath;
+    },
+    "projects.import": async () => {
+      const win = getWindow();
+      const options: Electron.OpenDialogOptions = {
+        title: "Імпорт з JSON",
+        // Exported files are usually imported from the same place.
+        defaultPath: fileDialogDir(settings.value.lastExportDir, app.getPath("documents")),
+        properties: ["openFile"],
+        filters: [{ name: "JSON", extensions: ["json"] }],
+      };
+      const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+      const path = result.filePaths[0];
+      if (result.canceled || !path) return null;
+      return store.importProject(await readFile(path, "utf8"));
+    },
     "session.get": () => store.snapshot(),
+    "session.setScene": (sceneId) => store.rememberScene(sceneId),
     "session.execute": (command, args) => store.execute(command, args, "user"),
     "session.undo": () => store.undo(),
     "session.redo": () => store.redo(),

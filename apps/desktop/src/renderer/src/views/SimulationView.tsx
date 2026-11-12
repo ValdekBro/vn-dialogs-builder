@@ -129,7 +129,7 @@ function EntryView({ entry, project, current }: { entry: Entry; project: Project
       const reveal = <RevealButton sceneId={entry.sceneId} blockId={entry.blockId} />;
       if (ch?.builtIn === "author" && entry.kind === "line") {
         return (
-          <div className="group relative px-8 text-center text-sm italic leading-relaxed text-zinc-400">
+          <div className="group relative px-8 text-center text-sm italic leading-relaxed text-zinc-400" data-testid="sim-line">
             <span className="whitespace-pre-wrap">{entry.text}</span>
             {reveal}
           </div>

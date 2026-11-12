@@ -185,7 +185,7 @@ A separate Characters section, so it does not take space next to the canvas.
 ## 12. Issues
 
 - A block or output with an issue has a red frame or a red stub. This marks **every unfinished spot**: a block without a character (e.g. after a character was deleted: the text stays, the character field is empty), empty text, an unconnected output, an unreachable block.
-- **While the project has errors, export is blocked.** The "Export" button is disabled, and its tooltip shows the error count and opens the list. Warnings do not block export.
+- **While the project has errors, export is blocked.** The export button looks disabled; its tooltip shows the error count, and a click opens the issues list for the whole project. Warnings do not block export.
 - Saving **does not depend** on errors: project state is always saved (section 15).
 - **The `⚠ N` counter** in the top bar shows the project's error count (a green check when there are none). A click opens the list: the current scene's issues, with a switch to the whole project (it opens on the whole project if the current scene is clean). Each row says what is wrong and where (scene, character, the start of the line). Clicking an issue opens its scene in the builder, moves the canvas to the block and highlights it.
 - The issue count is also shown next to each scene in the scene list.
@@ -221,10 +221,10 @@ A project is a set of scenes (and the characters who speak in them) with a **nam
 - **Switching projects:** the project name on the left of the top bar is a dropdown. It lists projects for quick switching, a "+ New project" item and an "All projects…" item that opens the Projects screen. Switching is instant, because the current project is already autosaved.
 - **New project:** the user types only a name. The project is created with the "Автор" character and an empty "Сцена 1" scene, which opens right away.
 - **The About project section:** a separate section (not a panel next to the canvas) with the name, a large field for the lore description and short stats: scenes, characters, lines and errors. The agent also reads the lore description as context.
-- On launch the app opens the last project worked on.
+- On launch the app opens the last project worked on, on the scene that was open last. Each project remembers its own last scene (switching projects opens it too).
 - **Autosave** runs constantly in the background: unsaved changes are written **every second**. There is no "Save" button. The top bar shows "Saved" / "Saving…".
-- **JSON export:** the project menu. Available only when the project has no errors (section 12). The result is a file in a separate, versioned export format (see [SCHEMA.md](SCHEMA.md)).
-- **JSON import:** on the Projects screen. Creates a new project from an export file.
+- **JSON export:** the export button in the top bar, next to the `⚠ N` counter. It opens the system "Save as" dialog, suggesting `<project name>.json` in the folder of the last export (Documents the first time, or if that folder is gone). The import dialog starts in the same folder. Available only when the project has no errors (section 12). The result is a file in a separate, versioned export format (see [SCHEMA.md](SCHEMA.md)).
+- **JSON import:** the "Import from JSON" button on the Projects screen. Creates a new project from an export file of any released version and opens it right away. If a project with that name already exists, the new one is called "<name> (імпорт)" (then "(імпорт 2)" and so on). Block positions are not in the export, so the canvas lays them out automatically. A file that is not an export, is damaged, or comes from a newer VNami gets a clear message, and nothing is created.
 - **App updates:** projects saved by an older version are upgraded to the new format automatically on open. The app makes a backup first.
 
 ## 16. Decisions made

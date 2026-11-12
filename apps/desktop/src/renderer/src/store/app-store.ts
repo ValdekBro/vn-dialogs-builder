@@ -39,13 +39,15 @@ export const useApp = create<AppState>(() => ({
 }));
 
 function applySnapshot(s: SessionSnapshot) {
-  const prevScene = useApp.getState().sceneId;
+  const prev = useApp.getState();
+  // The same project (a resync) keeps the scene on screen; another project opens on its last scene.
+  const wanted = prev.project?.id === s.project.id ? prev.sceneId : s.lastSceneId;
   useApp.setState({
     project: s.project,
     version: s.version,
     history: s.history,
     save: s.save,
-    sceneId: pickScene(s.project, prevScene),
+    sceneId: pickScene(s.project, wanted),
   });
 }
 
@@ -94,6 +96,11 @@ function onEvent(event: SessionEvent) {
       return;
   }
 }
+
+// The selected scene is remembered per project, so the next open (or launch) shows it again.
+useApp.subscribe((state, prev) => {
+  if (state.project && state.sceneId && state.sceneId !== prev.sceneId) void call("session.setScene", state.sceneId).catch(() => {});
+});
 
 let started = false;
 

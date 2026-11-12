@@ -1,10 +1,23 @@
 import { projectIssues, type Issue, type Project } from "@vn/core";
 import { CircleCheck, TriangleAlert } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { create } from "zustand";
 import { revealBlock } from "../canvas/canvas-store";
 import { useApp } from "../store/app-store";
 import { t } from "../strings/uk";
 import { Tip } from "./Tip";
+
+type Scope = "scene" | "project";
+
+/** Panel state lives outside the component, so other buttons (the blocked export) can open it. */
+const usePanel = create<{ open: boolean; scope: Scope }>(() => ({ open: false, scope: "scene" }));
+const setOpen = (open: boolean) => usePanel.setState({ open });
+const setScope = (scope: Scope) => usePanel.setState({ scope });
+
+/** Opens the issues list for the whole project. */
+export function openProjectIssues() {
+  usePanel.setState({ open: true, scope: "project" });
+}
 
 /**
  * The `⚠ N` counter in the top bar (FLOWS.md, 12): the project's error count. A click opens the list —
@@ -12,8 +25,7 @@ import { Tip } from "./Tip";
  */
 export function IssuesButton({ project }: { project: Project }) {
   const sceneId = useApp((s) => s.sceneId);
-  const [open, setOpen] = useState(false);
-  const [scope, setScope] = useState<"scene" | "project">("scene");
+  const { open, scope } = usePanel();
   const root = useRef<HTMLDivElement>(null);
   const all = useMemo(() => projectIssues(project), [project]);
   const errors = all.filter((i) => i.severity === "error").length;

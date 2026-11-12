@@ -1,13 +1,14 @@
 import { useState } from "react";
 import type { ProjectSummary } from "../../../shared/api";
-import { Bot, Copy, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Bot, Copy, FileUp, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { showTransferError } from "../components/ExportButton";
 import { openAgentDialog } from "../store/agent-store";
 import { checkForUpdates, useUpdate } from "../store/update-store";
 import { call } from "../api";
 import { Tip } from "../components/Tip";
 import { InlineEdit } from "../components/InlineEdit";
 import { useApp } from "../store/app-store";
-import { attempt } from "../store/toast";
+import { attempt, showToast } from "../store/toast";
 import { t } from "../strings/uk";
 
 /** The "Projects" screen (FLOWS.md, section 15). */
@@ -22,18 +23,37 @@ export function ProjectsScreen() {
       await call("projects.open", summary.id);
     });
 
+  // Import creates a new project and opens it right away (FLOWS.md, 15).
+  const importFile = async () => {
+    try {
+      const snapshot = await call("projects.import");
+      if (snapshot) showToast(t.transfer.imported(snapshot.project.name));
+    } catch (e) {
+      showTransferError(e);
+    }
+  };
+
   return (
     <div className="mx-auto flex h-full max-w-4xl flex-col px-8 py-10">
       <header className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t.projects.title}</h1>
         {!creating && (
-          <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            {t.projects.create}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void importFile()}
+              className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
+            >
+              <FileUp size={15} /> {t.transfer.import}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              {t.projects.create}
+            </button>
+          </div>
         )}
       </header>
 

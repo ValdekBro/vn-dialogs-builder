@@ -2,6 +2,7 @@ import type { Project } from "@vn/core";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Redo2, Undo2 } from "lucide-react";
 import { AgentButton } from "../components/AgentButton";
+import { ExportButton } from "../components/ExportButton";
 import { IssuesButton } from "../components/IssuesButton";
 import { call } from "../api";
 import { Tip } from "../components/Tip";
@@ -58,6 +59,7 @@ function TopBar({ project, view }: { project: Project; view: ProjectView }) {
       </nav>
       <div className="flex-1" />
       <IssuesButton project={project} />
+      <ExportButton project={project} />
       <AgentButton />
       <span className={`mr-1 text-xs ${save === "error" ? "text-red-400" : "text-zinc-500"}`} aria-live="polite">
         {t.save[save]}

@@ -12,7 +12,7 @@ export const t = {
     namePlaceholder: "Назва проєкту",
     createConfirm: "Створити",
     cancel: "Скасувати",
-    empty: "Ще немає жодного проєкту. Створіть перший.",
+    empty: "Ще немає жодного проєкту. Створіть перший або імпортуйте з JSON.",
     scenes: (n: number) => `${n} ${plural(n, "сцена", "сцени", "сцен")}`,
     updated: (ms: number) => `змінено ${new Date(ms).toLocaleString("uk-UA", { dateStyle: "medium", timeStyle: "short" })}`,
     rename: "Перейменувати",
@@ -126,7 +126,7 @@ export const t = {
     whatsNew: "Що нового",
     install: "Оновити",
     download: "Завантажити",
-    downloadHint: "Відкриється сторінка релізу: завантажте .dmg і перетягніть VNami у «Програми» замість старої версії. Проєкти збережуться.",
+    downloadHint: "Відкриється сторінка релізу: завантажте .dmg для свого Mac (arm64 — Apple Silicon, x64 — Intel) і перетягніть VNami у «Програми» замість старої версії. Проєкти збережуться.",
     later: "Нагадати пізніше",
     downloading: (v: string, p: number) => `Завантаження версії ${v}… ${p}%`,
     installing: "Зберігаю проєкт і перезапускаюсь…",
@@ -190,6 +190,22 @@ export const t = {
       lines: "Реплік",
       issues: "Помилок",
     },
+  },
+
+  transfer: {
+    export: "Експорт у JSON",
+    exportTip: "Експорт у JSON — зберегти проєкт у файл",
+    exportBlocked: (n: number) => `Експорт недоступний: ${n} ${plural(n, "помилка", "помилки", "помилок")} у проєкті — показати`,
+    exported: (file: string) => `Експортовано у «${file}»`,
+    import: "Імпорт з JSON",
+    imported: (name: string) => `Проєкт «${name}» імпортовано`,
+    errors: {
+      EXPORT_BLOCKED: "Спершу виправте помилки в проєкті.",
+      IMPORT_NOT_JSON: "Це не JSON-файл.",
+      IMPORT_UNKNOWN_FORMAT: "Це не файл експорту VNami.",
+      IMPORT_TOO_NEW: "Файл експортовано новішою версією VNami. Оновіть застосунок, щоб його імпортувати.",
+      IMPORT_INVALID: "Файл експорту пошкоджений або змінений вручну, імпортувати його не вдалося.",
+    } as Record<string, string>,
   },
 
   issues: {

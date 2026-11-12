@@ -20,3 +20,14 @@ const bridge: VnBridge = {
 };
 
 contextBridge.exposeInMainWorld("vn", bridge);
+
+// E2E test mode (TESTING.md, section 3): tests read the model the window works on.
+if (process.argv.includes("--vn-e2e")) {
+  contextBridge.exposeInMainWorld("__vnTest", {
+    getProject: async () => {
+      const result = (await ipcRenderer.invoke(IPC.invoke, "session.get", [])) as ApiResult<{ project: unknown } | null>;
+      if (!result.ok) throw new Error(result.error.message);
+      return result.value?.project ?? null;
+    },
+  });
+}

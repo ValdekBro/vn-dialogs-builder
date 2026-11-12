@@ -24,15 +24,15 @@ An E2E test **launches the built Electron app** via Playwright's `_electron.laun
 
 ## 3. What the app does for testability
 
-This is added together with the E2E infrastructure:
-
-1. **Data folder from env.** `VN_USER_DATA_DIR=<temp folder>` replaces `app.getPath("userData")`. Before launch a test can put ready-made projects (fixtures) there.
-2. **Test mode** `VN_E2E=1`:
-   - animations are off (the layout applies immediately, without smooth movement), so clicks do not miss;
-   - autosave fires right after a change, not on a timer;
-   - MCP listens on a random free port, and the app reports the port and token to the test;
-   - the deletion approval timeout is short (e.g. 5 seconds) to test `timeout`;
-   - update checks and other background activity are off.
+1. **Data folder from env.** `VN_USER_DATA_DIR=<temp folder>` replaces `app.getPath("userData")`. Before launch a test can put ready-made projects (seeds) there.
+2. **Test mode** `VN_E2E=1` (`src/main/index.ts`):
+   - CSS transitions and animations are off, so clicks land where the element ends up;
+   - autosave runs every 50 ms instead of every second;
+   - MCP listens on a random free port; the test reads the port and token from `globalThis.__vnE2E.mcp()` in the main process;
+   - `VN_E2E_APPROVAL_SEC` shortens the deletion approval timeout to test `timeout`;
+   - update checks are off;
+   - `VN_E2E_HIDDEN=1` keeps the window hidden (it still renders fully).
+   - The Claude app config path (`VN_CLAUDE_CONFIG`) always points into the test's temp folder.
 3. **Stable selectors.**
    - Elements are found by role and label (`getByRole("button", { name: "Додати блок" })`). This way the test also checks UI accessibility.
    - Where there is no label (canvas nodes, outputs, `(+)`), a `data-testid` with the entity ID is used: `block-<blockId>`, `add-<lineId>` for the `(+)` on a line's output.
@@ -41,25 +41,30 @@ This is added together with the E2E infrastructure:
 
 ## 4. Helper layer
 
-Tests do not work with raw selectors; they use page objects:
+Tests do not work with raw selectors; they use the helpers in `e2e/support`:
 
 ```ts
-const app = await launchApp({ seed: "prologue" });     // clean folder + fixture
-await app.canvas.addAfter(blockId).click();            // (+) after a block
-await app.picker.choose("Бен");                        // character in the block draft
-await app.editor.type("Привіт, ГГ! Може, допомогти донести?").enter();
-await expect(app.canvas.block({ text: "Привіт, ГГ!" })).toHaveIssue(false);
-await app.restart();                                   // close and reopen with the same folder
-const agent = await app.connectAgent();                // a real MCP client
+test.use({ launch: { seed: [prologue()] } });          // clean folder + a ready project, opened on start
+
+test("…", async ({ vn }) => {
+  await vn.canvas.addAfter(lineId).click();            // (+) on a line's output
+  await vn.draft.pickCharacter("Бен");                 // character in the block draft (creates it if new)
+  await vn.draft.line().fill("Привіт, ГГ! Може, допомогти донести?");
+  await vn.draft.line().press("Enter");
+  const project = await vn.project();                  // the model the window works on
+  const again = await vn.restart();                    // close and reopen with the same folder
+  const agent = await vn.connectAgent();               // a real MCP client
+  await vn.stubSaveDialog(path);                       // "Save as" returns this path
+});
 ```
 
-- `launchApp`, `restart`, `connectAgent` — launch, restart, connect an MCP client.
-- `canvas`, `picker`, `editor`, `characters`, `scenes`, `issues`, `projects`, `approval`, `toast` — page objects per FLOWS.md section.
-- Custom matchers (`toHaveIssue`, `toBeConnectedTo`, `toBeHighlightedAsAgentChange`) keep tests short and readable.
+- `e2e/support/app.ts` — the `vn` fixture (`VnApp`): launch, `restart`, `project`, `connectAgent`, `stubSaveDialog` / `stubOpenDialog`, and small page objects `canvas`, `draft`, `topBar`, `toast`. When a test fails, the main-process log is attached to the report.
+- `e2e/support/seeds.ts` — seed projects built with core commands: `prologue()` (the «Ранок» scene with a choice, a jump to «Біля криниці» and one unconnected option) and `lastTram()` (a clean project with no errors).
+- Custom matchers (`toHaveIssue`, `toBeConnectedTo`, `toBeHighlightedAsAgentChange`) are planned for when the remaining scenarios are written.
 
 ## 5. E2E scenarios
 
-Each scenario is tied to a FLOWS.md section.
+Each scenario is tied to a FLOWS.md section. **Written so far** (`apps/desktop/e2e`): E1, E2–E4, E5 (without reordering by drag), E9, E15, E17, E19, E20, E22, E24. The rest are next.
 
 | # | Scenario | Steps and checks | FLOWS |
 |---|---|---|---|
@@ -90,9 +95,9 @@ Each scenario is tied to a FLOWS.md section.
 
 ## 6. Diagnosing failures
 
-- When a test fails, a **Playwright trace** (every step with a DOM snapshot), a **screenshot** and a **video** of the window are saved. Open the trace with `pnpm exec playwright show-trace`.
-- Main-process logs go to a file in the test's temp folder and are attached to the report.
-- **Comparison screenshots** (`toHaveScreenshot`) are taken only for a few key canvas states (block, choice, issues, agent highlight). Screenshots are stored per OS, because fonts differ.
+- When a test fails, a **Playwright trace** (every step with a DOM snapshot) and a **screenshot** of the window are saved (video — not yet). Open the trace with `pnpm exec playwright show-trace`.
+- The main-process log (and the window's console) is attached to the report of a failed test.
+- **Comparison screenshots** (`toHaveScreenshot`, not yet) will be taken only for a few key canvas states (block, choice, issues, agent highlight). Screenshots are stored per OS, because fonts differ.
 
 ## 7. When what runs
 
@@ -113,7 +118,8 @@ pnpm e2e --ui        # Playwright interactive mode: every step is visible
 ```
 
 - Locally the app windows appear on screen: you can watch the test click. For background runs there is `VN_E2E_HIDDEN=1`: the window is not shown but fully renders.
-- **CI:** releases run typecheck and unit tests (`.github/workflows/release.yml`). E2E in CI — manual (`workflow_dispatch`) with a macOS / Windows / Linux matrix, on Linux via `xvfb`; reports and traces uploaded as artifacts.
+- **CI:** releases run typecheck and unit tests (`.github/workflows/release.yml`). E2E in CI is manual: Actions → **E2E** → Run workflow (`.github/workflows/e2e.yml`), optionally with a scenario filter. It runs on macOS, Windows and Linux (via `xvfb`); the HTML report and traces of failed tests are uploaded as artifacts.
+- Results go to `apps/desktop/e2e-results` (traces, screenshots) and `apps/desktop/playwright-report` (`pnpm exec playwright show-report`); both are git-ignored.
 
 ## 8. Development rule
 

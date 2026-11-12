@@ -1,0 +1,60 @@
+# E2E (TESTING.md, section 7): the real app driven by Playwright on macOS, Windows and Linux.
+# Manual only (Actions → E2E → Run workflow): E2E is slow and runs on request or before a release.
+# Reports and traces of failed tests are uploaded as artifacts.
+name: E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      grep:
+        description: "Only scenarios matching this (e.g. E5); empty — all"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Allow the Chromium sandbox (Linux)
+        # Ubuntu 24.04 blocks unprivileged user namespaces, which Electron's sandbox needs.
+        if: runner.os == 'Linux'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: E2E
+        working-directory: apps/desktop
+        shell: bash
+        env:
+          CI: "1"
+          GREP: ${{ inputs.grep }}
+        run: |
+          ARGS=()
+          if [ -n "$GREP" ]; then ARGS+=(-g "$GREP"); fi
+          # Linux runners have no display: xvfb provides a virtual one.
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run -a pnpm e2e "${ARGS[@]}"
+          else
+            pnpm e2e "${ARGS[@]}"
+          fi
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ matrix.os }}
+          path: |
+            apps/desktop/playwright-report
+            apps/desktop/e2e-results
+          if-no-files-found: ignore

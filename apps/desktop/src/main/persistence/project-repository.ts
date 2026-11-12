@@ -3,6 +3,7 @@ import { join } from "node:path";
 import {
   backupFileName,
   createProject,
+  fromExport,
   parseProjectFile,
   ProjectLoadError,
   randomId,
@@ -112,6 +113,21 @@ export class ProjectRepository {
     const copy: Project = { ...project, id: this.#newId("prj"), name: `${project.name} (копія)` };
     await this.save(copy);
     return copy;
+  }
+
+  /** Import (SCHEMA.md, section 8): a new project with a new ID from an export file of any supported version. */
+  async importExport(raw: unknown): Promise<Project> {
+    const project = fromExport(raw, { appVersion: this.#appVersion, newId: this.#newId });
+    // Two projects with the same name in the list are hard to tell apart, so a clash gets a suffix.
+    const taken = new Set((await this.list()).map((p) => p.name));
+    if (taken.has(project.name)) {
+      let n = 1;
+      const suffixed = () => `${project.name} (імпорт${n > 1 ? ` ${n}` : ""})`;
+      while (taken.has(suffixed())) n++;
+      project.name = suffixed();
+    }
+    await this.save(project);
+    return project;
   }
 
   async delete(id: string): Promise<void> {

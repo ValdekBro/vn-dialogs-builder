@@ -54,8 +54,8 @@ jobs:
             # Windows has rcedit: .exe icon and metadata (on Mac this step is disabled for the Windows build).
             args: --win --x64 --config.win.signAndEditExecutable=true
           - os: macos-latest
-            # Universal build (Apple Silicon + Intel) with an ad-hoc signature, see electron-builder.yml.
-            args: --mac --universal
+            # Separate Apple Silicon and Intel builds with an ad-hoc signature, see electron-builder.yml.
+            args: --mac --arm64 --x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5

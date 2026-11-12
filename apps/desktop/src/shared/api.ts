@@ -30,6 +30,8 @@ export type SaveState = "saved" | "dirty" | "saving" | "error";
 /** Snapshot of the open project for the window. */
 export type SessionSnapshot = {
   project: Project;
+  /** The scene that was open last in this project (it may have been deleted since). */
+  lastSceneId: string | null;
   /** Change counter: every `changed` event increments it by 1. A gap means the window must reload the snapshot. */
   version: number;
   history: HistoryState;
@@ -177,7 +179,13 @@ export type ApiMethods = {
   "projects.rename": [[id: string, name: string], void];
   "projects.duplicate": [[id: string], ProjectSummary];
   "projects.delete": [[id: string], void];
+  /** Export the open project: save dialog, then the file. The path, or null if cancelled. Error `EXPORT_BLOCKED` while there are errors. */
+  "projects.export": [[], string | null];
+  /** Import: open dialog, then a new project from the file, opened right away. null if cancelled. */
+  "projects.import": [[], SessionSnapshot | null];
   "session.get": [[], SessionSnapshot | null];
+  /** Remember the scene the window shows, so it opens again next time. */
+  "session.setScene": [[sceneId: string], void];
   "session.execute": [[command: CommandName, args: unknown], unknown];
   "session.undo": [[], string | null];
   "session.redo": [[], string | null];
