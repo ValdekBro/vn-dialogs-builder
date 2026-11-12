@@ -1,7 +1,7 @@
 import type { Block, Line } from "@vn/core";
 import { Handle, Position, useConnection, type NodeProps } from "@xyflow/react";
 import { linkTargets } from "@vn/core";
-import { Flag, GripVertical, Plus, Trash2, TriangleAlert, Undo2, X } from "lucide-react";
+import { Flag, GripVertical, Play, Plus, Trash2, TriangleAlert, Undo2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { execute } from "../../api";
 import { Tip } from "../../components/Tip";
@@ -11,6 +11,7 @@ import { t } from "../../strings/uk";
 import { moveBlocks, removeBlocks } from "../actions";
 import { useCanvas } from "../canvas-store";
 import { useAgent } from "../../store/agent-store";
+import { startSimulation } from "../../simulation/sim-store";
 import { CharacterPicker } from "../CharacterPicker";
 import { useCanvasData } from "../context";
 import type { ProjNode } from "../projection";
@@ -146,6 +147,20 @@ function Toolbar({ block, isStart }: { block: Block; isStart: boolean }) {
   const btn = "nodrag flex h-7 w-7 items-center justify-center rounded text-zinc-300 hover:bg-zinc-700 hover:text-white";
   return (
     <div className="absolute -top-9 right-0 hidden gap-0.5 rounded-md border border-zinc-700 bg-zinc-800 p-0.5 shadow-lg group-hover:flex">
+      <Tip label={t.canvas.tip.play}>
+        <button
+          type="button"
+          aria-label={t.canvas.tip.play}
+          className={`${btn} hover:!text-emerald-400`}
+          onClick={(e) => {
+            e.stopPropagation();
+            const sceneId = useApp.getState().sceneId;
+            if (sceneId) startSimulation(sceneId, block.id);
+          }}
+        >
+          <Play size={14} />
+        </button>
+      </Tip>
       {!isStart && (
         <Tip label={t.canvas.tip.makeStart}>
           <button

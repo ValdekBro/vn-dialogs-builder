@@ -115,12 +115,13 @@ There is no web version, cloud or accounts. Mobile platforms are out of scope. *
 
 The full specification is in [MCP.md](MCP.md).
 
-### 5.9 Dialogue simulation (wish list)
+### 5.9 Dialogue simulation
 - A simple view of a scene **as a chat**: lines appear one by one with the character's name and colour, like in a visual novel.
 - **Autoplay** with a pause between lines; can be sped up, or advanced manually.
 - Where a block has several lines (a choice), playback stops and shows the **options as buttons**; the chosen option continues the dialogue along its branch.
 - Jumps to another scene continue playing in that scene; "End of story" finishes the simulation.
 - Start from the scene's start block or from a selected block; can restart from the beginning.
+- A separate Simulation section; where a branch breaks, playback stops and explains what is wrong. Details in [FLOWS.md](FLOWS.md), section 17.
 
 ### 5.10 App updates
 - **Free, via GitHub Releases** of the public repository `ValdekBro/vn-dialogs-builder`. No server needed.
@@ -189,5 +190,5 @@ The full specification is in [MCP.md](MCP.md).
 7. ~~Electron app skeleton: window, main process, project storage.~~
 8. MVP wish list:
    1. ~~Updates (5.10)~~ — done.
-   2. Dialogue simulation as a chat with option choice and autoplay (5.9).
+   2. ~~Dialogue simulation as a chat with option choice and autoplay (5.9)~~ — done.
    3. ~~MCP server and connection guide (5.8)~~ — done.

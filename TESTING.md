@@ -7,6 +7,7 @@
 | Level | Tool | What it checks | Location |
 |---|---|---|---|
 | Unit | **Vitest** | Core: schemas, commands, undo/redo, issues, export | `packages/core/test` |
+| Renderer logic | **Vitest** | Pure UI logic without React: canvas projection, playback engine and store. Tests that import renderer modules live in `test/renderer` and are typechecked with the web (DOM) config | `apps/desktop/test` |
 | MCP integration | **Vitest** + a real MCP client from the SDK | MCP tools over HTTP on top of `ProjectStore`, without a window; the stdio bridge for the Claude app | `apps/desktop/test` |
 | **E2E** | **Playwright** (`_electron`) | **The real app**: launch, clicks, typing, restart, working together with an agent | `apps/desktop/e2e` |
 
@@ -84,6 +85,7 @@ Each scenario is tied to a FLOWS.md section.
 | E20 | Agent deletes | `delete_blocks` → approval panel with highlighted blocks → "Reject" gives `rejected`; retry → "Approve" gives `approved`; no answer — `timeout` | 14 |
 | E21 | Agent and human at once | The human edits a block's text, the agent changes the same block → the agent's change applies after editing ends, nothing is lost | 14 |
 | E22 | Undoing an agent action | The agent added blocks → the human presses Ctrl/Cmd+Z → the agent's changes are undone | 14 |
+| E24 | Simulation | `▶` on a block → the Simulation section plays from it; autoplay reaches the choice → key "2" → the branch continues into the next scene and ends with "End of story"; restart → another option leads nowhere → red panel → "Show in builder" highlights the block; pause holds, Space advances | 17 |
 | E23 | Canvas | Zoom, fit all, manual block placement and auto layout | 1, 8a |
 
 ## 6. Diagnosing failures

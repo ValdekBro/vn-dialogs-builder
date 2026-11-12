@@ -7,6 +7,7 @@ Written for people who use the app: what is new, what changed, what was fixed.
 ## [Unreleased]
 
 ### New
+- **Dialogue simulation.** The new "Simulation" section plays a scene as a chat, the way a player will read it: lines appear one by one with the character's name and colour, choices become buttons, jumps to other scenes keep playing. Autoplay paces itself by line length, with speeds from 0.5× to 3×; a click or Space shows the next line right away. Start from any block with ▶ on the canvas, or from the scene list in the section. If a branch breaks — an unconnected output, a block without a character, empty text — playback stops, says what is wrong and shows the spot in the builder.
 - **Connect the Claude app** (not only Claude Code). The 🤖 "Connect an AI agent" dialog now has a "Connect to Claude" button: it adds VNami to the Claude desktop app's settings without changing anything else there. Restart Claude afterwards, and you can ask it to write dialogue right in the chat. No need to install Node.js.
 - If VNami is closed, Claude gets a clear "open VNami" message instead of a connection error.
 

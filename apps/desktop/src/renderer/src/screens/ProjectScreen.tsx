@@ -10,8 +10,9 @@ import { t } from "../strings/uk";
 import { BuilderView } from "../views/BuilderView";
 import { CharactersView } from "../views/CharactersView";
 import { ProjectInfoView } from "../views/ProjectInfoView";
+import { SimulationView } from "../views/SimulationView";
 
-/** The open project: top bar and one of three sections. */
+/** The open project: top bar and one of its sections. */
 export function ProjectScreen() {
   const project = useApp((s) => s.project)!;
   const view = useApp((s) => s.view);
@@ -23,6 +24,7 @@ export function ProjectScreen() {
       {view === "builder" && <BuilderView project={project} />}
       {view === "characters" && <CharactersView project={project} />}
       {view === "project" && <ProjectInfoView project={project} />}
+      {view === "simulation" && <SimulationView project={project} />}
     </div>
   );
 }
@@ -30,6 +32,7 @@ export function ProjectScreen() {
 const VIEWS: { id: ProjectView; label: string }[] = [
   { id: "builder", label: t.views.builder },
   { id: "characters", label: t.views.characters },
+  { id: "simulation", label: t.views.simulation },
   { id: "project", label: t.views.project },
 ];
 

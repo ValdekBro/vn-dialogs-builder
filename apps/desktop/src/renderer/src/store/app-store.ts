@@ -24,7 +24,7 @@ export type AppState = {
   characterId: string | null;
 };
 
-export type ProjectView = "builder" | "characters" | "project";
+export type ProjectView = "builder" | "characters" | "project" | "simulation";
 
 export const useApp = create<AppState>(() => ({
   ready: false,

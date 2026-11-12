@@ -20,7 +20,7 @@ import { Tip } from "../components/Tip";
 import { useApp } from "../store/app-store";
 import { t } from "../strings/uk";
 import { moveBlocks, removeBlocks, resetLayout, setOutputNext } from "./actions";
-import { cancelDraft, resetCanvas, startDraft, useCanvas, hoverEdge } from "./canvas-store";
+import { cancelDraft, flashBlock, resetCanvas, startDraft, useCanvas, hoverEdge } from "./canvas-store";
 import { CanvasContext, indexIssues } from "./context";
 import { applyPinned, layoutProjection, type Point, type Positions, type Size } from "./layout";
 import { LinkEdge, type EdgeData } from "./LinkEdge";
@@ -92,7 +92,8 @@ function CanvasInner({ scene }: { scene: Scene }) {
     if (fittedScene.current !== scene.id && projection.nodes.every((n) => final.has(n.id))) {
       fittedScene.current = scene.id;
       void rf.fitView({ padding: 0.2, maxZoom: 1 });
-      return;
+      // A block requested while the scene was opening (e.g. from the Simulation section) is still shown below.
+      if (!focus) return;
     }
     if (!focus) return;
     const pos = final.get(focus.nodeId);
@@ -108,6 +109,7 @@ function CanvasInner({ scene }: { scene: Scene }) {
     const margin = 80;
     const visible = el && sx > margin && sy > margin && sx < el.clientWidth - margin && sy < el.clientHeight - margin;
     if (!visible || focus.flash) void rf.setCenter(cx, cy, { zoom: vp.zoom, duration: 300 });
+    if (focus.flash && final.has(focus.nodeId)) flashBlock(focus.nodeId);
   }, [final, focus, rf, scene.id, projection]);
 
   // While dragging, a block's service nodes ((+), "End", jump) move with it.

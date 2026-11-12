@@ -16,9 +16,10 @@
 
 ## 1. Canvas anatomy
 
-An open project has three sections; the switch between them is in the top bar:
+An open project has four sections; the switch between them is in the top bar:
 - **Dialogues** ("Діалоги") — the builder: scene list and canvas. Nothing extra, only dialogue work.
 - **Characters** ("Персонажі") — a separate section with a page for each character (section 10).
+- **Simulation** ("Симуляція") — play a scene as a chat, the way a player sees it (section 17).
 - **About project** ("Про проєкт") — name, lore description and short stats (section 15).
 
 ```
@@ -52,6 +53,7 @@ A block is a character and their lines. There is no separate "choice block" type
 - **A choice** (several lines) has a violet frame and `◇` markers, so it stands out from an ordinary line at once.
 - **Badges:** `⚑ start` on the start block. A block with an issue has a red frame, and hovering `⚠` shows what exactly is wrong.
 - **Hover action bar** (small icons above the block):
+  - `▶` play from this block (section 17);
   - `⚑` make it the start block;
   - `↶` return to auto layout (only on a manually moved block, section 8a);
   - `🗑` delete.
@@ -232,3 +234,21 @@ A project is a set of scenes (and the characters who speak in them) with a **nam
 | Auto-continue after Enter | Post-MVP |
 | Projects | Several projects in the app's storage, quick switching; a project has a name and a lore description |
 | Block placement | Auto layout + manual dragging by the header (section 8a) |
+| Dialogue simulation | A separate section; started by `▶` on a block or from the scene list; autoplay paced by line length; stops with an explanation where a branch breaks (section 17) |
+
+## 17. Dialogue simulation
+
+A separate Simulation section: the scene is played as a chat, the way the player will read it. It helps to check pacing, choices and dead ends without reading the graph.
+
+- **Start:**
+  - `▶` in a block's action bar ("Програти звідси") — plays from that block and opens the Simulation section;
+  - the section's left panel lists the scenes; a click plays the scene from its start block.
+- **The chat:** lines appear one by one in a centred column. A character's line has their name and a bubble with a stripe in their colour. "Автор" lines are narration: centred grey italics without a name.
+- **Autoplay** is on by default. The pause after a line depends on its length, like reading (about 15 characters per second, 1.2–8 s at 1×). Speed buttons 0.5×–3× scale it. Pause/play is a toolbar button or Shift+Space.
+- **Manual stepping:** a click on the chat, Space or the "Next line" button shows the next line right away.
+- **A choice** stops playback: "ГГ обирає:" and the options as buttons, also picked with keys 1–9. The picked option goes into the chat as that character's line marked "◇ вибір", and its branch continues.
+- **A jump to another scene** shows a divider "→ Сцена «Name»" and keeps playing in that scene. **"End of story"** finishes playback with a "Restart" button.
+- **Where the branch breaks** (an unconnected output, a block without a character, empty text, a jump into an empty scene) playback stops with a red panel "Тут гілка обривається" saying what is wrong, and a "Показати в білдері" button that opens the block on the canvas and highlights it.
+- Every line has a `↗` on hover to open its block in the builder.
+- "Restart" (the toolbar `⟲`) plays again from the same starting point.
+- Playback reads the current model at every step, so edits made meanwhile are picked up. Its state is not saved and does not go into undo history.
